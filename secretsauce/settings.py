@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_auth',
+    'knox',
     'secretsauce.apps.account'
 ]
 
@@ -68,8 +71,12 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'secretsauce.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES':('knox.auth.TokenAuthentication',)
+}
+
+WSGI_APPLICATION = 'secretsauce.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
