@@ -10,8 +10,6 @@ from django.utils import timezone
 
 class MyUserManager(BaseUserManager):
     def create_user(self, username, password, **extra_fields):
-        # for i in request_data:
-        # print("*" * 100, extra_fields)
         user = self.model(username= username, **extra_fields)
         user.set_password(password)
         user.save()
@@ -29,17 +27,3 @@ class MyUser(AbstractBaseUser):
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['username', 'email', 'rmstoken']
     # user_info = OneToOneField(to=User, on_delete=models.CASCADE, related_name="user")
-
-
-
-
-# class RegisterForm(forms.ModelForm):
-#     password
-#     def save(self, *arg, **kwargs):
-#         if not self.pk:
-#             try:
-#                 p = MyUser.objects.get(user=self.user)
-#                 self.pk = p.pk
-#             except MyUser.DoesNotExist:
-#                 pass
-#         super(MyUser, self).save(*arg, **kwargs)

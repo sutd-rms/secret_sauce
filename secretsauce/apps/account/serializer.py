@@ -26,7 +26,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 # Register Serializer
 class RegisterSerializer(serializers.ModelSerializer):
-  user = UserSerializer(required=True)
 
   class Meta:
     model = MyUser
