@@ -13,6 +13,10 @@ class Project(models.Model):
 class PredictionModel(models.Model):
     model_name = models.CharField(max_length=200)
     description = models.TextField()
+    required_hyperparameters = models.OneToOneField(
+        Hyperparameters,
+        on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return self.model_name
@@ -32,7 +36,10 @@ class Hyperparameters(models.Model):
     """
     Required hyperparameters to train a defined PredictionModel
     """
-    prediction_model = models.ForeignKey(PredictionModel, on_delete=models.CASCADE)
+    prediction_model = models.ForeignKey(
+        PredictionModel, 
+        on_delete=models.CASCADE
+    )
     hyperparameter_name = models.CharField(max_length=200)
     HYPERPARAM_TYPES = (
         ('INT', 'Integer'),
@@ -59,7 +66,7 @@ class Weights(models.Model):
     upload = models.URLField(max_length = 200) 
 
     def __str__(self):
-        return "It's a Weight!"
+        return "Weight for %s (%s)" % (self.prediction_model, self.data_block)
 
 class ConstraintBlock(models.Model):
     data_block = models.ForeignKey(DataBlock, on_delete=models.CASCADE)
