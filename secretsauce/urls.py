@@ -16,6 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from rest_framework.urlpatterns import format_suffix_patterns
+
+import secretsauce.apps.portal.views as portal_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('datablocks/', portal_views.DataBlockList.as_view()),
+    path('datablocks/<int:pk>', portal_views.DataBlockDetail.as_view()),
 ]
+
+urlpatterns = format_suffix_patterns(urlpatterns)

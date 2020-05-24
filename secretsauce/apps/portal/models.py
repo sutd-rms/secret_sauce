@@ -11,18 +11,14 @@ class Project(models.Model):
         return "%s: %s" % (self.organization, self.title)
 
 class PredictionModel(models.Model):
-    model_name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
     description = models.TextField()
-    required_hyperparameters = models.OneToOneField(
-        Hyperparameters,
-        on_delete=models.CASCADE
-    )
 
     def __str__(self):
         return self.model_name
 
 class ModelTag(models.Model):
-    tag_name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
     prediction_model = models.ManyToManyField(
         PredictionModel,
         related_name="tags"
@@ -36,11 +32,11 @@ class Hyperparameters(models.Model):
     """
     Required hyperparameters to train a defined PredictionModel
     """
-    prediction_model = models.ForeignKey(
+    prediction_model = models.OneToOneField(
         PredictionModel, 
         on_delete=models.CASCADE
     )
-    hyperparameter_name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
     HYPERPARAM_TYPES = (
         ('INT', 'Integer'),
         ('FP', 'Floating point'),
@@ -53,8 +49,9 @@ class Hyperparameters(models.Model):
         return "%s: %s (%s)" %(self.prediction_model, self.hyperparameter_name, self.hyperparameter_type)
 
 class DataBlock(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    data_block_name = models.CharField(max_length=200)
+    # TODO: Add back ForeignKey
+    # project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
     upload = models.FileField(upload_to="uploads/")
 
     def __str__(self):

@@ -120,3 +120,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = BASE_DIR + '/MEDIA/'
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
+}
