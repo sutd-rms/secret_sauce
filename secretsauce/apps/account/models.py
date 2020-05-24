@@ -1,29 +1,12 @@
-
-# Create your models here.
-from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import User, AbstractUser
 from django.db import models
-from django.db.models import OneToOneField
-from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
 
+class User(AbstractUser):
+    email = models.EmailField(verbose_name='email', max_length=255, unique=True)
+    phone = models.CharField(null=True, max_length=255)
+    token = models.CharField(max_length=60, null=False)
+    REQUIRED_FIELDS = ['username', 'phone', 'first_name', 'last_name', 'token']
+    USERNAME_FIELD = 'email'
 
-
-class MyUserManager(BaseUserManager):
-    def create_user(self, username, password, **extra_fields):
-        user = self.model(username= username, **extra_fields)
-        user.set_password(password)
-        user.save()
-        return user
-
-
-class MyUser(AbstractBaseUser):
-    user_id = models.AutoField(primary_key=True)
-    email = models.EmailField(max_length=255, unique=True)
-    password = models.CharField(max_length=64, default="pw")
-    username = models.CharField(max_length=64)
-    rmstoken = models.CharField(max_length=64)
-
-    objects = MyUserManager()
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['username', 'email', 'rmstoken']
-    # user_info = OneToOneField(to=User, on_delete=models.CASCADE, related_name="user")
+    def get_username(self):
+        return self.email
