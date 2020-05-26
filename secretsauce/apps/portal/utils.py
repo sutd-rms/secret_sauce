@@ -43,13 +43,14 @@ class UploadVerifier:
         Exception raised when there are issues related to the cell types of the csv file.
     """
 
+    headers = ['Wk', 'Tier', 'Groups', 'Store', 'Item_ID', 'Qty_', 'Price_']
+
     def __init__(self, upload, encoding='utf-8'):
         """Raises UnreadableCSVFile if there are issues with reading the file"""
-        self.headers = ['Wk', 'Tier', 'Groups', 'Store', 'Item_ID', 'Qty_', 'Price_']
         upload.seek(0)
         try:
-            io_obj = io.StringIO(upload.read().decode(encoding))
-            self.csv_file = csv.DictReader(io_obj)
+            self.io_obj = io.StringIO(upload.read().decode(encoding))
+            self.csv_file = csv.DictReader(self.io_obj)
         except:
             raise UnreadableCSVFile()
 
@@ -62,8 +63,9 @@ class UploadVerifier:
         for idx, header in enumerate(first_row):
             if header != self.headers[idx]:
                 raise WrongHeaderCSVFile()
+        self.io_obj.seek(0)
+        self.csv_file = csv.DictReader(self.io_obj)
         
-
     def check_type(self):
         """Raises WrongCellTypeCSVFile if there are issues related to the structure of the csv file"""
         for row in self.csv_file:
