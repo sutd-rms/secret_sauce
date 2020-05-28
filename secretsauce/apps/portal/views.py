@@ -15,7 +15,7 @@ class DataBlockList(generics.ListCreateAPIView):
     List all datablocks or create a new datablock.
 
     Usage example:
-        create: curl -X POST -F "name=test_file" -F "upload=@test.csv" localhost:8000/datablocks/
+        create: curl -X POST -F "name=test_file" -F "upload=@test.csv" -F "project=<uuid>" localhost:8000/datablocks/
         list: curl localhost:8000/datablocks/
     """
     queryset = DataBlock.objects.all()
@@ -36,3 +36,33 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
 
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSerializer
+
+class ProjectList(generics.ListCreateAPIView):
+
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+
+class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+
+class ConstraintList(generics.ListCreateAPIView):
+
+    queryset = Constraint.objects.all()
+    serializer_class = ConstraintSerializer
+
+class ConstraintDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    queryset = Constraint.objects.all()
+    serializer_class = ConstraintSerializer
+
+class PredictionModelList(generics.ListCreateAPIView):
+
+    queryset = PredictionModel.objects.all()
+    serializer_class = PredictionModelSerializer
+
+class PredictionModelDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    queryset = PredictionModel.objects.all()
+    serializer_class = PredictionModelSerializer
