@@ -11,4 +11,4 @@ class UserCreateSerializer(UserCreateSerializer):
 # class TokenSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Token
-#         fields = ('id', 'token', 'token_class')
+#         fields = ('id', 'token', 'company')

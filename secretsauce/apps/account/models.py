@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser
 # TODO: hash token field
 class Token(models.Model):
     token = models.CharField(max_length=60, unique=True, default="rms")
-    token_class = models.CharField(max_length=255, default="default RMS user")
+    company = models.CharField(max_length=255, default="default RMS user")
 
 # TODO: hash token field
 class User(AbstractUser):

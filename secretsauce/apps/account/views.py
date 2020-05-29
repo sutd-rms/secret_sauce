@@ -18,31 +18,31 @@ def check_token(request, *args, **kwargs):
     user_token = request.data['token']
     token = Token.objects.filter(token=user_token)
     if token.count()==1:
-        print(token[0].token_class)
-        token_class = token[0].token_class
-        return Response(data={'token_class': token_class}, status=status.HTTP_200_OK)
+        print(token[0].company)
+        company = token[0].company
+        return Response(data={'company': company}, status=status.HTTP_200_OK)
     else:
         return Response(data="Invalid Token!", status=status.HTTP_400_BAD_REQUEST)
 
 # create default entry for Token class, not sure whether this function is necessary
-# TODO: move hardcoded token_class name to static file
+# TODO: move hardcoded company name to static file
 @api_view(['GET'])
 def add_default_token(request, *args, **kwargs):
-    token = Token(token="rms", token_class="defualt RMS user")
+    token = Token(token="rms", company="defualt RMS")
     token.save()
     return Response(data="Default token entry added!", status=status.HTTP_200_OK)
 
 
 # create new RMS token
-# TODO: move hardcoded token_class name to static file
+# TODO: move hardcoded company name to static file
 @api_view(['POST'])
 def create_token(request, *args, **kwargs):
-    print(request.user.token.token_class)
-    if request.user.token.token_class!= "default RMS":
+    print(request.user.token.company)
+    if request.user.token.company!= "default RMS":
         return Response(data="Not permitted", status=status.HTTP_401_UNAUTHORIZED)
 
-    token = Token(token=request.data['token'], token_class=request.data['token_class'])
+    token = Token(token=request.data['token'], company=request.data['company'])
     token.save()
     return Response(data={
-        "token_class": "New token created, group: "+request.data['token_class']
+        "company": "New token created, group: "+request.data['company']
     }, status=status.HTTP_200_OK)
