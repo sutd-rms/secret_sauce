@@ -37,12 +37,12 @@ def add_default_token(request, *args, **kwargs):
 # TODO: move hardcoded token_class name to static file
 @api_view(['POST'])
 def create_token(request, *args, **kwargs):
-    if request.user.token_class!= "default RMS user":
+    print(request.user.token.token_class)
+    if request.user.token.token_class!= "default RMS":
         return Response(data="Not permitted", status=status.HTTP_401_UNAUTHORIZED)
 
     token = Token(token=request.data['token'], token_class=request.data['token_class'])
     token.save()
     return Response(data={
-        "token": request.data['token'],
-        "token_class": request.data['token_class']
+        "token_class": "New token created, group: "+request.data['token_class']
     }, status=status.HTTP_200_OK)
