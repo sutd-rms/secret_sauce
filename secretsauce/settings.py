@@ -146,6 +146,7 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR + '/MEDIA/'
 
-REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
-}
+# Temporarily disable this or else you cannot create user by browsable API when creating user
+# REST_FRAMEWORK = {
+#     'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
+# }
