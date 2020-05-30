@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'secretsauce.apps.account',
+    'secretsauce.apps.portal',
     'djoser'
 ]
 
@@ -142,3 +143,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = BASE_DIR + '/MEDIA/'
+
+# Temporarily disable this or else you cannot create user by browsable API when creating user
+# REST_FRAMEWORK = {
+#     'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
+# }

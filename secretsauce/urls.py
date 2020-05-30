@@ -17,8 +17,13 @@ from django.contrib import admin
 from django.urls import path, include
 
 
+from rest_framework.urlpatterns import format_suffix_patterns
+
+import secretsauce.apps.portal.views as portal_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('secretsauce.apps.account.urls'))
-    # path('', include('secretsauce.apps.account.urls'))
+    path('auth/', include('secretsauce.apps.account.urls')),
+    path('datablocks/', portal_views.DataBlockList.as_view()),
+    path('datablocks/<int:pk>', portal_views.DataBlockDetail.as_view()),
 ]
