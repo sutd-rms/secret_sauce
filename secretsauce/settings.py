@@ -37,8 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
     'secretsauce.apps.account',
-    'secretsauce.apps.portal',
+    'djoser'
 ]
 
 MIDDLEWARE = [
@@ -69,8 +71,28 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'secretsauce.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+AUTH_USER_MODEL = 'account.User'
+
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SERIALIZER': {
+        'user_create': 'account.serializer.UserCreateSerializer',
+        'user': 'account.serializer.UserCreateSerializer',
+    }
+}
+
+WSGI_APPLICATION = 'secretsauce.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
