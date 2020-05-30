@@ -1,5 +1,10 @@
-asgiref==3.2.6
-Django==3.0.4
+asgiref==3.2.7
+cffi==1.14.0
+cryptography==2.9.2
+Django==3.0.6
 djangorestframework==3.11.0
-pytz==2019.3
+pycparser==2.20
+pytz==2020.1
+six==1.14.0
 sqlparse==0.3.1
+djoser==2.0.3
