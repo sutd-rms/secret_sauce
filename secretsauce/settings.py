@@ -37,8 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
     'secretsauce.apps.account',
     'secretsauce.apps.portal',
+    'djoser'
 ]
 
 MIDDLEWARE = [
@@ -69,8 +72,29 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'secretsauce.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
+}
+
+AUTH_USER_MODEL = 'account.User'
+
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'USER_CREATE_PASSWORD_RETYPE': True,
+    'SERIALIZER': {
+        'user_create': 'account.serializer.UserCreateSerializer',
+        'user': 'account.serializer.UserCreateSerializer',
+    }
+}
+
+WSGI_APPLICATION = 'secretsauce.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
@@ -122,7 +146,3 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR + '/MEDIA/'
-
-REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
-}

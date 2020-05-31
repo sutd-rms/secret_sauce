@@ -35,7 +35,7 @@ class RequiredHyperparameter(models.Model):
     """
     Required hyperparameters to train a defined PredictionModel
     """
-    prediction_model = models.ForeignKey(
+    prediction_model = models.OneToOneField(
         PredictionModel, 
         on_delete=models.CASCADE,
         related_name='required_hyperparameters'

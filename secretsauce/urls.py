@@ -14,7 +14,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+
+
+from rest_framework.urlpatterns import format_suffix_patterns
+
+import secretsauce.apps.portal.views as portal_views
 
 from rest_framework.urlpatterns import format_suffix_patterns
 
@@ -30,6 +35,7 @@ urlpatterns = [
     path('constraints/<int:pk>', portal_views.ConstraintDetail.as_view()),
     path('predictionmodel/', portal_views.PredictionModelList.as_view()),
     path('predictionmodel/<int:pk>', portal_views.PredictionModelDetail.as_view()),
+    path('auth/', include('secretsauce.apps.account.urls')),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
