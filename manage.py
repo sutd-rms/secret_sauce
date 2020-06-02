@@ -5,7 +5,10 @@ import sys
 
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'secretsauce.settings')
+    if os.environ.get('DJANGO_ENV') == 'production':
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'secretsauce.production')
+    else:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'secretsauce.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
