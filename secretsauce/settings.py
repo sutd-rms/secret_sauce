@@ -28,6 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     '.azurewebsites.net',
     'secret-sauce.azurewebsites.net',
+    'localhost',
 ]
 
 
