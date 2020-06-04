@@ -9,6 +9,7 @@ from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
 
 from .utils import UploadVerifier
+from django.core.mail import send_mail
 
 class DataBlockList(generics.ListCreateAPIView):
     """
@@ -36,3 +37,6 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
 
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSerializer
+
+def email_test():
+    send_mail('Subject here', 'Here is the message.', 'donotreply@rmsportal.com', ['sutdcapstone22@gmail.com'], fail_silently=False)

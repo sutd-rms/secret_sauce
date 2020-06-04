@@ -150,6 +150,14 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR + '/MEDIA/'
 
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
 # Temporarily disable this or else you cannot create user by browsable API when creating user
 # REST_FRAMEWORK = {
 #     'EXCEPTION_HANDLER': 'secretsauce.apps.portal.utils.custom_exception_handler'
