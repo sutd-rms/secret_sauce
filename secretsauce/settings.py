@@ -25,7 +25,11 @@ SECRET_KEY = '8k(f#0jep^14d@)7uin16tdd6bxwzh$wkw50zly=49%pl+s&gn'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '.azurewebsites.net',
+    'secret-sauce.azurewebsites.net',
+    'localhost',
+]
 
 
 # Application definition
