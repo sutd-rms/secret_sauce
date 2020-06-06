@@ -12,5 +12,5 @@ if __name__ == "__main__":
     django.setup()
     from secretsauce.apps.account.models import User
     new_user = User.objects.create_superuser(**kwargs)
-    print("New user created:", new_user.email)
+    print("New superuser created:", new_user.email)
     

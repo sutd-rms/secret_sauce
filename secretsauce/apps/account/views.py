@@ -10,7 +10,7 @@ from djoser.conf import settings
 from djoser.views import UserViewSet
 
 from secretsauce.apps.account.models import Invitation
-from secretsauce.apps.account.serializer import InvitationSerializer
+from secretsauce.apps.account.serializers import InvitationSerializer
 
 class InvitationCreator(mixins.CreateModelMixin,
                         mixins.ListModelMixin,
