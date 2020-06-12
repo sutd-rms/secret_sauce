@@ -1,22 +1,67 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.utils.translation import ugettext_lazy as _
+import uuid
 
+from rest_framework.exceptions import APIException
 
-# TODO: hash token field
-class Token(models.Model):
-    token = models.CharField(max_length=60, unique=True, default="rms")
-    company = models.CharField(max_length=255, default="default RMS user")
+class IncompatibleInvitationCode(APIException):
+    status_code = 400
+    default_detail = "Invitation code does not belong to this email address"
+    default_code = "incompatible_invitation_code"
 
-# TODO: hash token field
-class User(AbstractUser):
+# TODO: Hash ID field
+class Invitation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(verbose_name='email', max_length=255, unique=True)
+
+class UserManager(BaseUserManager):
+    """Define a model manager for User model with no username field."""
+
+    use_in_migrations = True
+
+    def _create_user(self, email, password, **extra_fields):
+        """Create and save a User with the given email and password."""
+        if not email:
+            raise ValueError('The given email must be set')
+        if email != extra_fields.get("invitation").email:
+            raise IncompatibleInvitationCode()
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and save a regular User with the given email and password."""
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
+        return self._create_user(email, password, **extra_fields)
+
+    def create_superuser(self, email, password, **extra_fields):
+        """Create and save a SuperUser with the given email and password."""
+        invitation = Invitation.objects.create(email=email)
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('invitation', invitation)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self._create_user(email, password, **extra_fields)
+
+class User(AbstractUser):
+    username = None
+    email = models.EmailField(_("email address"), unique=True, primary_key=True)
     phone = models.CharField(null=True, max_length=255)
-    token = models.OneToOneField(Token, on_delete=models.CASCADE, null=False)
-    REQUIRED_FIELDS = ['username', 'phone', 'first_name', 'last_name', 'token']
+    invitation = models.OneToOneField(
+        Invitation,
+        on_delete=models.CASCADE,
+    )
+
+    REQUIRED_FIELDS = ['phone', 'first_name', 'last_name', 'invitation']
     USERNAME_FIELD = 'email'
 
-    def get_username(self):
-        return self.email
-
-    def get_token(self):
-        return self.token
+    objects = UserManager()

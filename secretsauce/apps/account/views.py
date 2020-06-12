@@ -1,48 +1,42 @@
 from django.shortcuts import render
+from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
 from rest_framework.response import Response
+from rest_framework import status, mixins, generics, permissions, authentication
 
-from secretsauce.apps.account.models import Token
+from djoser import signals
+from djoser.compat import get_user_email
+from djoser.conf import settings
+from djoser.views import UserViewSet
 
+from secretsauce.apps.account.models import Invitation
+from secretsauce.apps.account.serializers import InvitationSerializer
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def restricted(request, *args, ** kwargs):
-#     return Response(data="Display Only for Logged in User", status=status.HTTP_200_OK)
+class InvitationCreator(mixins.CreateModelMixin,
+                        mixins.ListModelMixin,
+                        generics.GenericAPIView):
+    """
+    Create a new invitation
+    """
 
-# check whether the token provided is in the database
-@api_view(['POST'])
-def check_token(request, *args, **kwargs):
-    user_token = request.data['token']
-    token = Token.objects.filter(token=user_token)
-    if token.count()==1:
-        print(token[0].company)
-        company = token[0].company
-        return Response(data={'company': company}, status=status.HTTP_200_OK)
-    else:
-        return Response(data="Invalid Token!", status=status.HTTP_400_BAD_REQUEST)
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Invitation.objects.all()
+    serializer_class = InvitationSerializer
 
-# create default entry for Token class, not sure whether this function is necessary
-# TODO: move hardcoded company name to static file
-@api_view(['GET'])
-def add_default_token(request, *args, **kwargs):
-    token = Token(token="rms", company="defualt RMS")
-    token.save()
-    return Response(data="Default token entry added!", status=status.HTTP_200_OK)
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
 
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
 
-# create new RMS token
-# TODO: move hardcoded company name to static file
-@api_view(['POST'])
-def create_token(request, *args, **kwargs):
-    print(request.user.token.company)
-    if request.user.token.company!= "default RMS":
-        return Response(data="Not permitted", status=status.HTTP_401_UNAUTHORIZED)
+class InvitationDetail(mixins.RetrieveModelMixin,
+                       generics.GenericAPIView):
+    """
+    Check invitation validity
+    """
 
-    token = Token(token=request.data['token'], company=request.data['company'])
-    token.save()
-    return Response(data={
-        "company": "New token created, group: "+request.data['company']
-    }, status=status.HTTP_200_OK)
+    queryset = Invitation.objects.all()
+    serializer_class = InvitationSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
