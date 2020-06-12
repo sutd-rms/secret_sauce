@@ -91,11 +91,8 @@ AUTH_USER_MODEL = 'account.User'
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
+    'USER_ID_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
-    'SERIALIZER': {
-        'user_create': 'account.serializer.UserCreateSerializer',
-        'user': 'account.serializer.UserCreateSerializer',
-    }
 }
 
 WSGI_APPLICATION = 'secretsauce.wsgi.application'

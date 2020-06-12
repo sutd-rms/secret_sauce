@@ -16,26 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-
 from rest_framework.urlpatterns import format_suffix_patterns
-
-import secretsauce.apps.portal.views as portal_views
-
-from rest_framework.urlpatterns import format_suffix_patterns
-
-import secretsauce.apps.portal.views as portal_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('datablocks/', portal_views.DataBlockList.as_view()),
-    path('datablocks/<int:pk>', portal_views.DataBlockDetail.as_view()),
-    path('projects/', portal_views.ProjectList.as_view()),
-    path('projects/<int:pk>', portal_views.ProjectDetail.as_view()),
-    path('constraints/', portal_views.ConstraintList.as_view()),
-    path('constraints/<int:pk>', portal_views.ConstraintDetail.as_view()),
-    path('predictionmodel/', portal_views.PredictionModelList.as_view()),
-    path('predictionmodel/<int:pk>', portal_views.PredictionModelDetail.as_view()),
     path('auth/', include('secretsauce.apps.account.urls')),
+    path('portal/', include('secretsauce.apps.portal.urls')),
 ]
-
-urlpatterns = format_suffix_patterns(urlpatterns)

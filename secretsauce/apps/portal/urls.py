@@ -1,5 +1,5 @@
 from django.urls import path, include
-from secretsauce.apps.account import views
+from secretsauce.apps.portal import views
 
 # /users/ create user
 # /token/login/ obtain user authentication token (login)
@@ -13,9 +13,13 @@ from secretsauce.apps.account import views
 # /users/reset_password_confirm/ finish reset password process
 # all endpoints available please view: https://djoser.readthedocs.io/en/latest/base_endpoints.html
 
-urlpatterns =[
-    path('', include('djoser.urls')),
-    path('', include('djoser.urls.authtoken')),
-    path('invitation/', views.InvitationCreator.as_view()),
-    path('invitation/<uuid:pk>', views.InvitationDetail.as_view()),
+urlpatterns = [
+    path('datablocks/', views.DataBlockList.as_view()),
+    path('datablocks/<int:pk>', views.DataBlockDetail.as_view()),
+    path('projects/', views.ProjectList.as_view()),
+    path('projects/<int:pk>', views.ProjectDetail.as_view()),
+    path('constraints/', views.ConstraintList.as_view()),
+    path('constraints/<int:pk>', views.ConstraintDetail.as_view()),
+    path('predictionmodel/', views.PredictionModelList.as_view()),
+    path('predictionmodel/<int:pk>', views.PredictionModelDetail.as_view()),
 ]
