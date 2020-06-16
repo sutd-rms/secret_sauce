@@ -3,6 +3,9 @@ from rest_framework import serializers
 
 from secretsauce.apps.portal.models import *
 
+class OwnerSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
 class DataBlockSerializer(serializers.ModelSerializer):
     class Meta:
         model = DataBlock
@@ -10,6 +13,7 @@ class DataBlockSerializer(serializers.ModelSerializer):
     
 class ProjectSerializer(serializers.ModelSerializer):
     datablocks = DataBlockSerializer(many=True, read_only=True)
+    owners = OwnerSerializer(many=True, read_only=True)
 
     class Meta:
         model = Project

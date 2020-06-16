@@ -3,12 +3,14 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import ugettext_lazy as _
 import uuid
 
-from rest_framework.exceptions import APIException
+from secretsauce.utils import IncompatibleInvitationCode
 
-class IncompatibleInvitationCode(APIException):
-    status_code = 400
-    default_detail = "Invitation code does not belong to this email address"
-    default_code = "incompatible_invitation_code"
+class Company(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200, unique=True)
+
+    def __str__(self):
+        return self.name
 
 # TODO: Hash ID field
 class Invitation(models.Model):
@@ -41,9 +43,11 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         """Create and save a SuperUser with the given email and password."""
         invitation = Invitation.objects.create(email=email)
+        company = Company.objects.get_or_create(name="Revenue Management Solutions")[0]
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('invitation', invitation)
+        extra_fields.setdefault('company', company)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -56,12 +60,18 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True, primary_key=True)
     phone = models.CharField(null=True, max_length=255)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+    )
     invitation = models.OneToOneField(
         Invitation,
         on_delete=models.CASCADE,
     )
 
-    REQUIRED_FIELDS = ['phone', 'first_name', 'last_name', 'invitation']
+    # REQUIRED_FIELDS is a list of field names that will be prompted when creating a user via the createsuperusercommand.
+    # REQUIRED_FIELDS has no effect in other parts of Django, like creating a user in the admin.
+    REQUIRED_FIELDS = ['first_name', 'last_name']
     USERNAME_FIELD = 'email'
 
     objects = UserManager()

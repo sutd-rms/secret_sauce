@@ -1,4 +1,5 @@
 from django.db import models
+from secretsauce.apps.account.models import User, Company
 import uuid
 
 # Create your models here.
@@ -6,11 +7,18 @@ import uuid
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField("Project Title", max_length=200)
-    organization = models.CharField("Organization", max_length=200)
-    # TODO: Change organization into choices
+    description = models.TextField("Project Description", blank=True)
+    cover = models.ImageField(upload_to='cover_images/', blank=True)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+    )
+    owners = models.ManyToManyField(
+        User,
+    )
 
     def __str__(self):
-        return "%s: %s" % (self.organization, self.title)
+        return "%s: %s" % (self.company, self.title)
 
 class PredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -18,7 +26,7 @@ class PredictionModel(models.Model):
     description = models.TextField()
 
     def __str__(self):
-        return self.model_name
+        return self.name
 
 class ModelTag(models.Model):
     name = models.CharField(max_length=200)
@@ -29,7 +37,7 @@ class ModelTag(models.Model):
     # TODO: No repeated tags
 
     def __str__(self):
-        return self.tag_name
+        return self.name
 
 class RequiredHyperparameter(models.Model):
     """
@@ -50,7 +58,7 @@ class RequiredHyperparameter(models.Model):
     hyperparameter_type = models.CharField(max_length=3, choices=HYPERPARAM_TYPES)
 
     def __str__(self):
-        return "%s: %s (%s)" %(self.prediction_model, self.hyperparameter_name, self.hyperparameter_type)
+        return "%s: %s (%s)" %(self.prediction_model, self.name, self.hyperparameter_type)
 
 class DataBlock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -63,7 +71,7 @@ class DataBlock(models.Model):
     upload = models.FileField(upload_to='uploads/')
 
     def __str__(self):
-        return "DataBlock: %s" % (self.data_block_name) 
+        return "DataBlock: %s" % (self.name) 
 
 class Weights(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -92,7 +100,7 @@ class ConstraintBlock(models.Model):
     constraint_block_name = models.CharField(max_length=200)
 
     def __str__(self):
-        return "ConstraintBlock: %s" % (self.constraint_block_name)
+        return "ConstraintBlock: %s" % (self.name)
 
 class Constraint(models.Model):
     constraint_block = models.ForeignKey(
@@ -103,4 +111,4 @@ class Constraint(models.Model):
     name = models.CharField(max_length=200)
 
     def __str__(self):
-        return "Constraint: %s" % (self.constraint_name)
+        return "Constraint: %s" % (self.name)
