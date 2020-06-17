@@ -24,10 +24,13 @@ class UserManager(BaseUserManager):
 
     def _create_user(self, email, password, **extra_fields):
         """Create and save a User with the given email and password."""
+
+        # Ensure email corresponds to invitation
         if not email:
             raise ValueError('The given email must be set')
         if email != extra_fields.get("invitation").email:
             raise IncompatibleInvitationCode()
+
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -42,12 +45,15 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, password, **extra_fields):
         """Create and save a SuperUser with the given email and password."""
-        invitation = Invitation.objects.create(email=email)
+
+        # Automatically create invitation and assign company (compatible with "manage.py createadmin" usage)
+        invitation = Invitation.objects.get_or_create(email=email)[0]
         company = Company.objects.get_or_create(name="Revenue Management Solutions")[0]
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('invitation', invitation)
         extra_fields.setdefault('company', company)
+
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -69,9 +75,9 @@ class User(AbstractUser):
         on_delete=models.CASCADE,
     )
 
-    # REQUIRED_FIELDS is a list of field names that will be prompted when creating a user via the createsuperusercommand.
-    # REQUIRED_FIELDS has no effect in other parts of Django, like creating a user in the admin.
-    REQUIRED_FIELDS = ['first_name', 'last_name']
+    # REQUIRED_FIELDS is a list of field names that will be prompted when creating a user via the createsuperuser manage.py command.
+    # Djoser also uses REQUIRED_FIELDS to define which fields are required in the API, thus rendering createsuperuser hard to use
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'company', 'invitation']
     USERNAME_FIELD = 'email'
 
     objects = UserManager()
