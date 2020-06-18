@@ -19,5 +19,5 @@ urlpatterns =[
     path('invitation/', views.InvitationCreator.as_view()),
     path('invitation/<uuid:pk>', views.InvitationDetail.as_view()),
     path('company/', views.CompanyList.as_view()),
-    path('company/', views.CompanyDetail.as_view()),
+    path('company/<uuid:pk>', views.CompanyDetail.as_view()),
 ]
