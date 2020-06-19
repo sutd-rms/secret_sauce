@@ -1,14 +1,16 @@
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
+from rest_framework.decorators import permission_classes
 
 from django.core.files.storage import default_storage
 
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
+from secretsauce.permissions import IsOwnerOrAdmin, AdminOrReadOnly
+from secretsauce.utils import UploadVerifier
 
-from .utils import UploadVerifier
 from django.core.mail import send_mail
 
 class DataBlockList(generics.ListCreateAPIView):
@@ -33,7 +35,7 @@ class DataBlockList(generics.ListCreateAPIView):
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
     """
     Retrieve or delete a datablock instance
-    """
+    """ 
 
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSerializer
@@ -43,28 +45,27 @@ class ProjectList(generics.ListCreateAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return self.queryset.all()
+        return self.queryset.filter(owners=user.email)
+
 class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
 
+    permission_classes = [IsOwnerOrAdmin]
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
-class ConstraintList(generics.ListCreateAPIView):
-
-    queryset = Constraint.objects.all()
-    serializer_class = ConstraintSerializer
-
-class ConstraintDetail(generics.RetrieveUpdateDestroyAPIView):
-
-    queryset = Constraint.objects.all()
-    serializer_class = ConstraintSerializer
-
 class PredictionModelList(generics.ListCreateAPIView):
 
+    permission_classes = [AdminOrReadOnly]
     queryset = PredictionModel.objects.all()
     serializer_class = PredictionModelSerializer
 
 class PredictionModelDetail(generics.RetrieveUpdateDestroyAPIView):
 
+    permission_classes = [AdminOrReadOnly]
     queryset = PredictionModel.objects.all()
     serializer_class = PredictionModelSerializer
     

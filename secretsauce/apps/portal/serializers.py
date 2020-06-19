@@ -9,11 +9,9 @@ class DataBlockSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
 class ProjectSerializer(serializers.ModelSerializer):
-    datablocks = DataBlockSerializer(many=True, read_only=True)
-
     class Meta:
         model = Project
-        fields = '__all__'
+        fields = '__all__' 
 
 class ConstraintSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,8 +19,6 @@ class ConstraintSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ConstraintBlockSerializer(serializers.ModelSerializer):
-    constraints = ConstraintSerializer(many=True, read_only=True)
-
     class Meta:
         model = ConstraintBlock
         fields = '__all__'
