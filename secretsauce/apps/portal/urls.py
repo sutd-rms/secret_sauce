@@ -15,11 +15,9 @@ from secretsauce.apps.portal import views
 
 urlpatterns = [
     path('datablocks/', views.DataBlockList.as_view()),
-    path('datablocks/<int:pk>', views.DataBlockDetail.as_view()),
+    path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view()),
     path('projects/', views.ProjectList.as_view()),
-    path('projects/<int:pk>', views.ProjectDetail.as_view()),
-    path('constraints/', views.ConstraintList.as_view()),
-    path('constraints/<int:pk>', views.ConstraintDetail.as_view()),
+    path('projects/<uuid:pk>', views.ProjectDetail.as_view()),
     path('predictionmodel/', views.PredictionModelList.as_view()),
-    path('predictionmodel/<int:pk>', views.PredictionModelDetail.as_view()),
+    path('predictionmodel/<uuid:pk>', views.PredictionModelDetail.as_view()),
 ]

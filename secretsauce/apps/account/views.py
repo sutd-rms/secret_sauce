@@ -10,8 +10,8 @@ from djoser.compat import get_user_email
 from djoser.conf import settings
 from djoser.views import UserViewSet
 
-from secretsauce.apps.account.models import Invitation
-from secretsauce.apps.account.serializers import InvitationSerializer
+from secretsauce.apps.account.models import Invitation, Company
+from secretsauce.apps.account.serializers import InvitationSerializer, CompanySerializer
 
 class InvitationCreator(mixins.CreateModelMixin,
                         mixins.ListModelMixin,
@@ -31,8 +31,13 @@ class InvitationCreator(mixins.CreateModelMixin,
             email = serializer.data.get('email')
             invitation_id = serializer.data.get('id')
             message = "Your invitation code is " + invitation_id + "."
-            print(send_mail('Invitation to the RMS Club', message, 'sutdcapstone22@gmail.com', [email], fail_silently=False))
+            send_mail('Invitation to the RMS Club', message, 'sutdcapstone22@gmail.com', [email], fail_silently=False)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        elif 'invitation with this email already exists.' in serializer.errors['email']:
+            email = serializer.data.get('email')
+            invitation_id = str(Invitation.objects.get(email=email).id)
+            message = "Your invitation code is " + invitation_id + "."
+            send_mail('Invitation to the RMS Club', message, 'sutdcapstone22@gmail.com', [email], fail_silently=False)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request, *args, **kwargs):
@@ -52,3 +57,15 @@ class InvitationDetail(mixins.RetrieveModelMixin,
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
+
+class CompanyList(generics.ListCreateAPIView):
+
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
+
+class CompanyDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
