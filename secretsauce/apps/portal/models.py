@@ -38,26 +38,6 @@ class ModelTag(models.Model):
     def __str__(self):
         return self.name
 
-# class RequiredHyperparameter(models.Model):
-#     """
-#     Required hyperparameters to train a defined PredictionModel
-#     """
-#     prediction_model = models.OneToOneField(
-#         PredictionModel, 
-#         on_delete=models.CASCADE,
-#     )
-#     name = models.CharField(max_length=200)
-#     HYPERPARAM_TYPES = (
-#         ('INT', "Integer"),
-#         ('FP', "Floating point"),
-#         ('STR', "String"),
-#         ('CAT', "Category")
-#     )
-#     hyperparameter_type = models.CharField(max_length=3, choices=HYPERPARAM_TYPES)
-
-#     def __str__(self):
-#         return "%s: %s (%s)" %(self.prediction_model, self.name, self.hyperparameter_type)
-
 class DataBlock(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(
@@ -70,21 +50,6 @@ class DataBlock(models.Model):
 
     def __str__(self):
         return "DataBlock: %s" % (self.name) 
-
-# class Weights(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     prediction_model = models.ForeignKey(
-#         PredictionModel, 
-#         on_delete=models.CASCADE, 
-#     )
-#     data_block = models.ForeignKey(
-#         DataBlock, 
-#         on_delete=models.CASCADE,
-#     )
-#     upload = models.URLField(max_length = 200) 
-
-#     def __str__(self):
-#         return "Weight for %s (%s)" % (self.prediction_model, self.data_block)
 
 class ConstraintBlock(models.Model):
     """A set of constraints"""

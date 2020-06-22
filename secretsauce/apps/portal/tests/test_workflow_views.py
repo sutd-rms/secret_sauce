@@ -120,9 +120,6 @@ class ProjectTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get('id'), project_id)
 
-class DataBlockTests(APITestCase):
-    pass
-
 class ConstraintTests(APITestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser("admin@rms.com", "pw123123")
@@ -140,11 +137,7 @@ class ConstraintTests(APITestCase):
             company=self.company,
         )
         self.project.owners.add(self.admin)
-
-        self.first_cb = ConstraintBlock.objects.create(
-            project=self.project,
-            name="First Constraint Block"
-        )
+        self.project.owners.add(self.user)
 
         self.list_url = reverse('constraint-block-list')
         self.detail_url = reverse_args('constraint-block-detail')
@@ -155,75 +148,60 @@ class ConstraintTests(APITestCase):
         self.rel_create_url = reverse('constraint-relationship-create')
         self.rel_detail_url = reverse_args('constraint-relationship-detail')
 
-    def test_get_constraint_block_list(self):
-        """
-        Test retrieving list of ConstraintBlocks related to a project
-        """
-        self.client.force_authenticate(user=self.admin)
-        response = self.client.get(self.list_url, data={}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-        response = self.client.get(self.list_url, data={'project':self.project.id}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+    def test_constraint_workflow(self):
+    
+        self.client.force_authenticate(user=self.user)
 
-    def test_create_constraint_block(self):
-        """
-        Test creation of ConstraintBlock
-        """
-        self.client.force_authenticate(user=self.admin)
+        # Create ConstraintBlock
         response = self.client.post(self.list_url, data={
             'project': self.project.id,
-            'name': "Second Constraint Block"
+            'name': "First ConstraintBlock"
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data.get('name'), "Second Constraint Block")
-
-    # def test_get_constraint_block_detail(self):
-    #     pass
-
-    def test_add_constraint_equation(self):
-        self.client.force_authenticate(user=self.admin)
+        self.assertEqual(response.data.get('name'), "First ConstraintBlock")
+        cb_id = response.data.get('id')
 
         # New constraint parameters
         response = self.client.post(self.param_list_url, data={
             'name': "Big Mac Price",
-            'constraint_block': self.first_cb.id
+            'constraint_block': cb_id,
         }, format='json')   
-        bmac = response.data.get('id')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         response = self.client.post(self.param_list_url, data={
             'name': "Cheeseburger Price",
-            'constraint_block': self.first_cb.id
+            'constraint_block': cb_id,
         }, format='json')  
-        cburger = response.data.get('id')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        big_mac = response.data.get('id')
+        cheese_burger = response.data.get('id')
 
         # New constraint
         response = self.client.post(self.constraint_list_url, data={
-            'constraint_block': self.first_cb.id,
+            'constraint_block': cb_id,
             'name': "Big Mac more expensive than Cheeseburger",
             'in_equality': "GEQ"
-        }, format='json')    
-        c = response.data.get('id')
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        c_id = response.data.get('id')
 
         # New constraint relationships
         response = self.client.post(self.rel_create_url, data={
-            'constraint': c,
-            'constraint_parameter': bmac,
+            'constraint': c_id,
+            'constraint_parameter': big_mac,
             'coefficient': '+1'
         }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         response = self.client.post(self.rel_create_url, data={
-            'constraint': c,
-            'constraint_parameter': cburger,
+            'constraint': c_id,
+            'constraint_parameter': cheese_burger,
             'coefficient': '-1'
         })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        # Check constraint
-        response = self.client.get(self.constraint_detail_url(c))
+        # Check Constraint
+        response = self.client.get(self.constraint_detail_url(c_id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data.get('constraint_relationships')), 2)
 
+        # Check ConstraintBlock
         response = self.client.get(self.list_url, data={'project': self.project.id})
-
-    # def test_add_constraint(self):
-    #     pass
-
-class PredictionModelTests(APITestCase):
-    pass

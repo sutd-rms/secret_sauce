@@ -32,6 +32,21 @@ class DataBlockList(generics.ListCreateAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_queryset(self):
+        assert self.queryset is not None, (
+        "'%s' should either include a `queryset` attribute, "
+        "or override the `get_queryset()` method."
+        % self.__class__.__name__
+        )
+
+        queryset = self.queryset
+        if isinstance(queryset, QuerySet):
+            # Ensure queryset is re-evaluated on each request.
+            queryset = queryset.all()
+
+        project = self.request.query_params.get('project')
+        return queryset.filter(project=project)
         
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
     """
@@ -60,7 +75,7 @@ class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
 
 class ConstraintBlockList(generics.ListCreateAPIView):
     """
-    List all constraint blocks related to a DataBlock
+    List all constraint blocks related to a Project
     Create new constraint block
     """
 
