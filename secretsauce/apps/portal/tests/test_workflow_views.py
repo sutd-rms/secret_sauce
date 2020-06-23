@@ -179,7 +179,8 @@ class ConstraintTests(APITestCase):
         response = self.client.post(self.constraint_list_url, data={
             'constraint_block': cb_id,
             'name': "Big Mac more expensive than Cheeseburger",
-            'in_equality': "GEQ"
+            'in_equality': "GEQ",
+            'rhs_constant': 1,
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         c_id = response.data.get('id')

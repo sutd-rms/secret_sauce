@@ -82,6 +82,7 @@ class Constraint(models.Model):
     )
     name = models.CharField(max_length=200)
     in_equality = models.CharField(max_length=3, choices=RELATIONSHIP_CHOICES)
+    rhs_constant = models.FloatField()
 
     def __str__(self):
         return "Constraint: %s" % (self.name)
