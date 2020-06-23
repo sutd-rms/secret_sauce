@@ -16,8 +16,16 @@ from secretsauce.apps.portal import views
 urlpatterns = [
     path('datablocks/', views.DataBlockList.as_view()),
     path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view()),
-    path('projects/', views.ProjectList.as_view()),
-    path('projects/<uuid:pk>', views.ProjectDetail.as_view()),
+    path('projects/', views.ProjectList.as_view(), name='project-list'),
+    path('projects/<uuid:pk>', views.ProjectDetail.as_view(), name='project-detail'),
+    path('constraintblocks/', views.ConstraintBlockList.as_view(), name='constraint-block-list'),
+    path('constraintblocks/<uuid:pk>', views.ConstraintBlockDetail.as_view(), name='constraint-block-detail'),
+    path('constraint/', views.ConstraintList.as_view(), name='constraint-list'),
+    path('constraint/<uuid:pk>', views.ConstraintDetail.as_view(), name='constraint-detail'),
+    path('constraintparameter/', views.ConstraintParameterList.as_view(), name='constraint-parameter-list'),
+    path('constraintparameter/<uuid:pk>', views.ConstraintParameterList.as_view(), name='constraint-parameter-list'),
+    path('constraintrelationship/', views.ConstraintRelationshipCreate.as_view(), name='constraint-relationship-create'),
+    path('constraintrelationship/<uuid:pk>', views.ConstraintRelationshipDetail.as_view(), name='constraint-relationhip-detail'),
     path('predictionmodel/', views.PredictionModelList.as_view()),
     path('predictionmodel/<uuid:pk>', views.PredictionModelDetail.as_view()),
 ]
