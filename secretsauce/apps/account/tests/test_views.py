@@ -46,10 +46,10 @@ class CreateAccountTest(APITestCase):
         response = self.client.post(self.user_creation, data={
             'email': "test@gmail.com",
         }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         """
-        Only admin Users cannot create new users
+        Only admin Users can create new users
         """
         self.client.force_authenticate(user=self.admin)
 
@@ -58,6 +58,7 @@ class CreateAccountTest(APITestCase):
             'email': "test@gmail.com",
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.count(), 3)
 
         """
         Ensure email is provided
@@ -66,4 +67,4 @@ class CreateAccountTest(APITestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post(self.user_creation, data={
         }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -91,8 +91,10 @@ AUTH_USER_MODEL = 'account.User'
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
+    'EMAIL_FIELD': 'email',
     'USER_ID_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
+    'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}'
 }
 
 WSGI_APPLICATION = 'secretsauce.wsgi.application'
@@ -148,7 +150,8 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR + '/MEDIA/'
 
-SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+# SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
+SENDGRID_API_KEY = "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"
 
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey'
