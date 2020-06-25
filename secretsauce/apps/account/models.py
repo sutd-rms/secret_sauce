@@ -55,6 +55,7 @@ class User(AbstractUser):
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
+        null=True
     )
 
     # REQUIRED_FIELDS is a list of field names that will be prompted when creating a user via the createsuperuser manage.py command.
