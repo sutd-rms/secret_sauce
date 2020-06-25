@@ -10,5 +10,5 @@ class Command(createsuperuser.Command):
         self.UserModel = get_user_model()
         self.username_field = self.UserModel._meta.get_field(self.UserModel.USERNAME_FIELD)
 
-        omit = {'invitation', 'company'}
+        omit = {'company'}
         self.UserModel.REQUIRED_FIELDS = tuple([field for field in self.UserModel.REQUIRED_FIELDS if field not in omit])

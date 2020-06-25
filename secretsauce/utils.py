@@ -29,11 +29,6 @@ class WrongCellTypeCSVFile(APIException):
     default_detail = "CSV file has the wrong cell type"
     default_code = "wrong_cell_type_csv_file"
 
-class IncompatibleInvitationCode(APIException):
-    status_code = 400
-    default_detail = "Invitation code does not belong to this email address"
-    default_code = "incompatible_invitation_code"
-
 class UploadVerifier:
     """
     Helper class to verify validity of the uploaded datablock file
