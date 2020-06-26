@@ -15,11 +15,8 @@ from djoser.views import UserViewSet
 
 from secretsauce.apps.account.models import *
 from secretsauce.apps.account.serializers import *
+from secretsauce.utils import *
 
-
-def generatePassword(stringLength=10):
-    lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))
 class CompanyList(generics.ListCreateAPIView):
 
     permission_classes = [permissions.IsAdminUser]
@@ -38,13 +35,21 @@ class InviteUser(generics.CreateAPIView):
 
     def create(self, request):
         password = generatePassword()
+        user_email = request.data['email']
         user = User.objects.create_user(
-            request.data['email'],
+            user_email,
             password
         )
         user.save()
         serializer=UserCreateSerializer(user)
 
+        mappings = {
+            'email': user_email,
+            'password':  password,
+        }
+
+        send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [user_email], '', 'create_user.html', mappings)
+
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        # send_mail('Subject here', 'Here is the message.', 'donotreply@rmsportal.com', ['sutdcapstone22@gmail.com'], fail_silently=False)
 

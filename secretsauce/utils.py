@@ -1,5 +1,7 @@
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import APIException
+from django.template import loader
+from django.core.mail import send_mail
 
 import csv, io
 
@@ -75,3 +77,16 @@ class UploadVerifier:
                     float(value)
                 except:
                     raise WrongCellTypeCSVFile()
+
+def send_email(subject, from_email, to_email, message, html_message_path, mappings={}):
+    html_message = loader.render_to_string(
+        html_message_path,
+        mappings
+    )
+    send_mail(subject, message, from_email, to_email, fail_silently=False, html_message=html_message)
+
+def generatePassword(stringLength=10):
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))
+
+    
