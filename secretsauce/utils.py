@@ -3,6 +3,8 @@ from rest_framework.exceptions import APIException
 from django.template import loader
 from django.core.mail import send_mail
 
+import random
+import string
 import csv, io
 
 def custom_exception_handler(exc, context):
