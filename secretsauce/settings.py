@@ -45,10 +45,12 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'secretsauce.apps.account',
     'secretsauce.apps.portal',
-    'djoser'
+    'djoser',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -158,3 +160,5 @@ EMAIL_HOST_USER = 'apikey'
 EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+CORS_ORIGIN_ALLOW_ALL = True 
