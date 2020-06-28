@@ -79,6 +79,7 @@ TEMPLATES = [
 ]
 
 
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
@@ -91,12 +92,14 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'account.User'
 
+DOMAIN = "localhost:3000"
+
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'EMAIL_FIELD': 'email',
     'USER_ID_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
-    'PASSWORD_RESET_CONFIRM_URL': 'https://rms-burger.azurewebsites.net/password-reset/confirm/{uid}/{token}'
+    'PASSWORD_RESET_CONFIRM_URL': 'password-reset/confirm/{uid}/{token}'
 }
 
 WSGI_APPLICATION = 'secretsauce.wsgi.application'
