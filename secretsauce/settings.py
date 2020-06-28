@@ -92,7 +92,7 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'account.User'
 
-DOMAIN = "localhost:3000"
+DOMAIN = "rms-burger.azurewebsites.net"
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
@@ -155,8 +155,7 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR + '/MEDIA/'
 
-# SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
-SENDGRID_API_KEY = "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"
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey'
