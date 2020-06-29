@@ -6,7 +6,7 @@ from secretsauce.apps.portal.models import *
 
 
 class Command(BaseCommand):
-    help = "Bulks creates sample instances of model in database"
+    help = "Bulk creates sample instances of model in database"
 
     @transaction.atomic
     def handle(self, *args, **kwargs):
