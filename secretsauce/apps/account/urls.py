@@ -18,5 +18,5 @@ urlpatterns =[
     path('', include('djoser.urls.authtoken')),
     path('company/', views.CompanyList.as_view()),
     path('company/<uuid:pk>', views.CompanyDetail.as_view()),
-    path('inviteuser', views.InviteUser.as_view(), name='user_creation')
+    path('inviteuser/', views.InviteUser.as_view(), name='user_creation')
 ]

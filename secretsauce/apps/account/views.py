@@ -34,9 +34,14 @@ class InviteUser(generics.CreateAPIView):
     def create(self, request):
         password = generatePassword()
         user_email = request.data['email']
+        company_id = request.data['company']
+
+        company_instance = Company.objects.get(pk=company_id)
+
         user = User.objects.create_user(
             user_email,
-            password
+            password,
+            company = company_instance
         )
         user.save()
         serializer=UserCreateSerializer(user)

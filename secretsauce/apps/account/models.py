@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import ugettext_lazy as _
+from django.core.validators import validate_email
 import uuid
 
 class Company(models.Model):
@@ -21,6 +22,7 @@ class UserManager(BaseUserManager):
         """Create and save a User with the given email and password."""
 
         email = self.normalize_email(email)
+        validate_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -50,12 +52,12 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser):
     username = None
-    email = models.EmailField(_("email address"), unique=True, primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(_("email address"), unique=True)
     phone = models.CharField(null=True, max_length=255)
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
-        null=True
     )
 
     # REQUIRED_FIELDS is a list of field names that will be prompted when creating a user via the createsuperuser manage.py command.
