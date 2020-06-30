@@ -6,13 +6,11 @@ from rest_framework.decorators import permission_classes
 
 from django.core.files.storage import default_storage
 from django.db.models.query import QuerySet
-from django.core.mail import send_mail
 
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
 from secretsauce.permissions import IsOwnerOrAdmin, AdminOrReadOnly
 from secretsauce.utils import UploadVerifier
-
 
 class DataBlockList(generics.ListCreateAPIView):
     """
@@ -189,5 +187,3 @@ class PredictionModelDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = PredictionModel.objects.all()
     serializer_class = PredictionModelSerializer
     
-def email_test():
-    send_mail('Subject here', 'Here is the message.', 'donotreply@rmsportal.com', ['sutdcapstone22@gmail.com'], fail_silently=False)

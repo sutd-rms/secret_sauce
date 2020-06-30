@@ -45,10 +45,12 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'secretsauce.apps.account',
     'secretsauce.apps.portal',
-    'djoser'
+    'djoser',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -63,7 +65,7 @@ ROOT_URLCONF = 'secretsauce.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR + '/templates/'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,6 +77,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 
 REST_FRAMEWORK = {
@@ -89,10 +92,14 @@ REST_FRAMEWORK = {
 
 AUTH_USER_MODEL = 'account.User'
 
+DOMAIN = "rms-burger.azurewebsites.net"
+
 DJOSER = {
     'LOGIN_FIELD': 'email',
+    'EMAIL_FIELD': 'email',
     'USER_ID_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
+    'PASSWORD_RESET_CONFIRM_URL': 'password-reset/confirm/{uid}/{token}'
 }
 
 WSGI_APPLICATION = 'secretsauce.wsgi.application'
@@ -155,3 +162,5 @@ EMAIL_HOST_USER = 'apikey'
 EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+CORS_ORIGIN_ALLOW_ALL = True 

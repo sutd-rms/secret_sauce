@@ -27,7 +27,6 @@ class ProjectCRUDTest(APITestCase):
         self.user = User.objects.create_user(
             "user1@mcdonald.com",
             "pw123123",
-            invitation=Invitation.objects.create(email="user1@mcdonald.com"),
             company=self.company,
         )
 

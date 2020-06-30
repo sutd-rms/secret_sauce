@@ -27,7 +27,6 @@ class ProjectTests(APITestCase):
         self.user = User.objects.create_user(
             "user1@mcdonald.com",
             "pw123123",
-            invitation=Invitation.objects.create(email="user1@mcdonald.com"),
             company=self.company,
         )
         self.project_data = {
@@ -129,7 +128,6 @@ class ConstraintTests(APITestCase):
         self.user = User.objects.create_user(
             "user1@mcdonald.com",
             "pw123123",
-            invitation=Invitation.objects.create(email="user1@mcdonald.com"),
             company=self.company,
         )
         self.project = Project.objects.create(

@@ -1,6 +1,10 @@
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import APIException
+from django.template import loader
+from django.core.mail import send_mail
 
+import random
+import string
 import csv, io
 
 def custom_exception_handler(exc, context):
@@ -28,11 +32,6 @@ class WrongCellTypeCSVFile(APIException):
     status_code = 400
     default_detail = "CSV file has the wrong cell type"
     default_code = "wrong_cell_type_csv_file"
-
-class IncompatibleInvitationCode(APIException):
-    status_code = 400
-    default_detail = "Invitation code does not belong to this email address"
-    default_code = "incompatible_invitation_code"
 
 class UploadVerifier:
     """
@@ -80,3 +79,16 @@ class UploadVerifier:
                     float(value)
                 except:
                     raise WrongCellTypeCSVFile()
+
+def send_email(subject, from_email, to_email, message, html_message_path, mappings={}):
+    html_message = loader.render_to_string(
+        html_message_path,
+        mappings
+    )
+    send_mail(subject, message, from_email, to_email, fail_silently=False, html_message=html_message)
+
+def generatePassword(stringLength=10):
+    lettersAndDigits = string.ascii_letters + string.digits
+    return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))
+
+    
