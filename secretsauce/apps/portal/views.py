@@ -186,4 +186,3 @@ class PredictionModelDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [AdminOrReadOnly]
     queryset = PredictionModel.objects.all()
     serializer_class = PredictionModelSerializer
-    

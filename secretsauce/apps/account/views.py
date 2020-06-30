@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.core.mail import send_mail
 from djoser.serializers import UserCreateSerializer
+
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -55,4 +56,3 @@ class InviteUser(generics.CreateAPIView):
 
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-

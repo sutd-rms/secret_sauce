@@ -89,6 +89,4 @@ def send_email(subject, from_email, to_email, message, html_message_path, mappin
 
 def generatePassword(stringLength=10):
     lettersAndDigits = string.ascii_letters + string.digits
-    return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))
-
-    
+    return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))    
