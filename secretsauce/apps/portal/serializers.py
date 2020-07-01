@@ -46,3 +46,9 @@ class PredictionModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = PredictionModel
         fields = '__all__'
+
+class ModelTagSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ModelTag
+        fields = '__all__'

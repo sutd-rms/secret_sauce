@@ -51,6 +51,7 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
     Retrieve or delete a datablock instance
     """ 
 
+    permission_classes = [IsOwnerOrAdmin]
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSerializer
 
@@ -99,6 +100,7 @@ class ConstraintBlockDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve/Update/Destroy a ConstraintBlock
     """
+    permission_classes = [IsOwnerOrAdmin]
     queryset = ConstraintBlock.objects.all()
     serializer_class = ConstraintBlockSerializer
 
@@ -129,6 +131,7 @@ class ConstraintDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve/Update/Destroy a constraint
     """
+    permission_classes = [IsOwnerOrAdmin]
     queryset = Constraint.objects.all()
     serializer_class = ConstraintSerializer
 
@@ -158,6 +161,7 @@ class ConstraintParameterDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve/Update/Destroy a constraint parameter
     """
+    permission_classes = [IsOwnerOrAdmin]
     queryset = ConstraintParameter.objects.all()
     serializer_class = ConstraintParameterSerializer
 
@@ -172,6 +176,7 @@ class ConstraintRelationshipDetail(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve/Update/Destroy ConstraintParameterRelationship
     """
+    permission_classes = [IsOwnerOrAdmin]
     queryset = ConstraintParameterRelationship.objects.all()
     serializer_class = ConstraintParameterRelationshipSerializer
 
@@ -186,3 +191,15 @@ class PredictionModelDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [AdminOrReadOnly]
     queryset = PredictionModel.objects.all()
     serializer_class = PredictionModelSerializer
+
+class ModelTagList(generics.ListCreateAPIView):
+
+    permission_classes = [AdminOrReadOnly]
+    queryset = ModelTag.objects.all()
+    serializer_class = ModelTagSerializer
+
+class ModelTagDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    permission_classes = [AdminOrReadOnly]
+    queryset = ModelTag.objects.all()
+    serializer_class = ModelTagSerializer

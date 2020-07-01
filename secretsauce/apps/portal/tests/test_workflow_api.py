@@ -6,17 +6,11 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from secretsauce.utils import reverse_args
 from secretsauce.apps.account.models import *
 from secretsauce.apps.account.serializers import *
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.views import *
-
-def reverse_args(name):
-    """
-    Helper function to reverse URL with arguments.
-    Returns a function whose parameters are the URL arguments.
-    """
-    return lambda *args: reverse(name, args=tuple(args)) 
 
 class ProjectTests(APITestCase):
     def setUp(self):
