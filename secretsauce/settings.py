@@ -97,7 +97,6 @@ DOMAIN = "rms-burger.azurewebsites.net"
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'EMAIL_FIELD': 'email',
-    'USER_ID_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
     'PASSWORD_RESET_CONFIRM_URL': 'password-reset/confirm/{uid}/{token}'
 }
