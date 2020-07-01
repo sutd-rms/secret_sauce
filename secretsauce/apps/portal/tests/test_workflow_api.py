@@ -26,7 +26,7 @@ class ProjectTests(APITestCase):
         self.project_data = {
             'title': "My first project",
             'company': self.company.id,
-            'owners': [self.admin.email],
+            'owners': [self.admin.id],
         }
         self.list_url = reverse('project-list')
         self.detail_url = reverse_args('project-detail')
@@ -100,7 +100,7 @@ class ProjectTests(APITestCase):
         # Add user as owner
         self.client.force_authenticate(user=self.admin)
         response = self.client.patch(self.detail_url(project_id), data={
-            'owners': [self.admin.email, self.user.email]
+            'owners': [self.admin.id, self.user.id]
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

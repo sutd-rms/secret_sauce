@@ -13,16 +13,16 @@ class IsOwnerOrAdmin(permissions.BasePermission):
             return True
 
         if isinstance(obj, Project):
-            return obj.owners.all().filter(pk=request.user.email).exists()
+            return obj.owners.all().filter(pk=request.user.id).exists()
 
         if isinstance(obj, DataBlock) or isinstance(obj, ConstraintBlock):
-            return obj.project.owners.all().filter(pk=request.user.email).exists()
+            return obj.project.owners.all().filter(pk=request.user.id).exists()
 
         if isinstance(obj, Constraint) or isinstance(obj, ConstraintParameter):
-            return obj.constraint_block.project.owners.all().filter(pk=request.user.email).exists()
+            return obj.constraint_block.project.owners.all().filter(pk=request.user.id).exists()
 
         if isinstance(obj, ConstraintParameterRelationship):
-            return obje.constraint.constraint_block.project.owners.all().filter(pk=request.user.email).exists()
+            return obje.constraint.constraint_block.project.owners.all().filter(pk=request.user.id).exists()
         
         return False
         

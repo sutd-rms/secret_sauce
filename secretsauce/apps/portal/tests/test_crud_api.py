@@ -60,7 +60,7 @@ class ProjectCRUDTest(APITestCase):
         response = self.client.post(self.list_url, data={
             'title': "My new project",
             'company': self.company.id,
-            'owners': [self.admin.email],
+            'owners': [self.admin.id],
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         
@@ -68,7 +68,7 @@ class ProjectCRUDTest(APITestCase):
         response = self.client.post(self.list_url, data={
             'title': "My other new project",
             'company': self.company.id,
-            'owners': [self.user.email],
+            'owners': [self.user.id],
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -99,7 +99,7 @@ class ProjectCRUDTest(APITestCase):
         response = self.client.put(self.detail_url(self.p1.id), data={
             'title': "New name",
             'company': self.company.id,
-            'owners': [self.admin.email],
+            'owners': [self.admin.id],
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get('title'), "New name")
@@ -107,7 +107,7 @@ class ProjectCRUDTest(APITestCase):
         response = self.client.put(self.detail_url(self.p2.id), data={
             'title': "New name 2",
             'company': self.company.id,
-            'owners': [self.user.email],
+            'owners': [self.user.id],
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get('title'), "New name 2")
@@ -117,14 +117,14 @@ class ProjectCRUDTest(APITestCase):
         response = self.client.put(self.detail_url(self.p1.id), data={
             'title': "New name 2",
             'company': self.company.id,
-            'owners': [self.admin.email],
+            'owners': [self.admin.id],
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         response = self.client.put(self.detail_url(self.p2.id), data={
             'title': "New name 2",
             'company': self.company.id,
-            'owners': [self.user.email],
+            'owners': [self.user.id],
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get('title'), "New name 2")
@@ -350,27 +350,27 @@ class ModelTagCRUDTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(ModelTag.objects.all()), 0)
 
-class DataBlockCRUDTest(APITestCase):
-    def setUp(self):
-        pass
+# class DataBlockCRUDTest(APITestCase):
+#     def setUp(self):
+#         pass
 
-    def test_list(self):
-        pass
+#     def test_list(self):
+#         pass
 
-    def test_create(self):
-        pass
+#     def test_create(self):
+#         pass
 
-    def test_retrieve(self):
-        pass
+#     def test_retrieve(self):
+#         pass
 
-    def test_update(self):
-        pass
+#     def test_update(self):
+#         pass
 
-    def test_partial_update(self):
-        pass
+#     def test_partial_update(self):
+#         pass
 
-    def test_destroy(self):
-        pass
+#     def test_destroy(self):
+#         pass
 
 class ConstraintBlockCRUDTest(APITestCase):
     def setUp(self):
@@ -451,68 +451,68 @@ class ConstraintBlockCRUDTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(ConstraintBlock.objects.all()), 0)
 
-class ConstraintCRUDTest(APITestCase):
-    def setUp(self):
-        pass
+# class ConstraintCRUDTest(APITestCase):
+#     def setUp(self):
+#         pass
 
-    def test_list(self):
-        pass
+#     def test_list(self):
+#         pass
 
-    def test_create(self):
-        pass
+#     def test_create(self):
+#         pass
 
-    def test_retrieve(self):
-        pass
+#     def test_retrieve(self):
+#         pass
 
-    def test_update(self):
-        pass
+#     def test_update(self):
+#         pass
 
-    def test_partial_update(self):
-        pass
+#     def test_partial_update(self):
+#         pass
 
-    def test_destroy(self):
-        pass
+#     def test_destroy(self):
+#         pass
 
-class ConstraintParameterCRUDTest(APITestCase):
-    def setUp(self):
-        pass
+# class ConstraintParameterCRUDTest(APITestCase):
+#     def setUp(self):
+#         pass
 
-    def test_list(self):
-        pass
+#     def test_list(self):
+#         pass
 
-    def test_create(self):
-        pass
+#     def test_create(self):
+#         pass
 
-    def test_retrieve(self):
-        pass
+#     def test_retrieve(self):
+#         pass
 
-    def test_update(self):
-        pass
+#     def test_update(self):
+#         pass
 
-    def test_partial_update(self):
-        pass
+#     def test_partial_update(self):
+#         pass
 
-    def test_destroy(self):
-        pass
+#     def test_destroy(self):
+#         pass
 
-class ConstraintParameterRelationshipCRUDTest(APITestCase):
-    def setUp(self):
-        pass
+# class ConstraintParameterRelationshipCRUDTest(APITestCase):
+#     def setUp(self):
+#         pass
 
-    def test_list(self):
-        pass
+#     def test_list(self):
+#         pass
 
-    def test_create(self):
-        pass
+#     def test_create(self):
+#         pass
 
-    def test_retrieve(self):
-        pass
+#     def test_retrieve(self):
+#         pass
 
-    def test_update(self):
-        pass
+#     def test_update(self):
+#         pass
 
-    def test_partial_update(self):
-        pass
+#     def test_partial_update(self):
+#         pass
 
-    def test_destroy(self):
-        pass
+#     def test_destroy(self):
+#         pass

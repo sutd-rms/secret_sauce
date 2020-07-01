@@ -64,7 +64,7 @@ class ProjectList(generics.ListCreateAPIView):
         user = self.request.user
         if user.is_superuser:
             return self.queryset.all()
-        return self.queryset.filter(owners=user.email)
+        return self.queryset.filter(owners=user.id)
 
 class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
 

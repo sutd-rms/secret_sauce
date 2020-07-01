@@ -33,26 +33,15 @@ class InviteUser(generics.CreateAPIView):
     permission_classes = [permissions.IsAdminUser]
 
     def create(self, request):
-        password = generatePassword()
-        user_email = request.data['email']
-        company_id = request.data['company']
+        request.data['password'] = generatePassword()
+        serializer = UserCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            mappings = {
+            'email': serializer.data.get('email'),
+            'password':  serializer.data.get('password'),
+            }
+            send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [mappings['email']], '', 'create_user.html', mappings)
 
-        company_instance = Company.objects.get(pk=company_id)
-
-        user = User.objects.create_user(
-            user_email,
-            password,
-            company = company_instance
-        )
-        user.save()
-        serializer=UserCreateSerializer(user)
-
-        mappings = {
-            'email': user_email,
-            'password':  password,
-        }
-
-        send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [user_email], '', 'create_user.html', mappings)
-
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        

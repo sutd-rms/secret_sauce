@@ -39,12 +39,14 @@ class CreateAccountTest(APITestCase):
 
         response = self.client.post(self.user_creation, data={
             'email': "test@gmail.com",
+            'company': self.company.id
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
         self.client.force_authenticate(user=self.user)
         response = self.client.post(self.user_creation, data={
             'email': "test@gmail.com",
+            'company': self.company.id
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -56,6 +58,7 @@ class CreateAccountTest(APITestCase):
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(self.user_creation, data={
             'email': "test@gmail.com",
+            'company': self.company.id
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 3)
