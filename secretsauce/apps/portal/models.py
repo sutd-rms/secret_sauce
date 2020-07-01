@@ -6,7 +6,7 @@ import uuid
 
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    title = models.CharField("Project Title", max_length=200)
+    title = models.CharField("Project Title", max_length=200, unique=True)
     description = models.TextField("Project Description", blank=True)
     cover = models.ImageField(upload_to='cover_images/', blank=True)
     company = models.ForeignKey(
@@ -15,6 +15,7 @@ class Project(models.Model):
     )
     owners = models.ManyToManyField(
         User,
+        blank=True,
     )
 
     def __str__(self):
@@ -23,16 +24,17 @@ class Project(models.Model):
 class PredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField("Model Description", blank=True)
 
     def __str__(self):
         return self.name
 
 class ModelTag(models.Model):
-    name = models.CharField(max_length=200, unique=True, primary_key=True)
-    prediction_model = models.ManyToManyField(
+    name = models.CharField(max_length=200, unique=True)
+    models = models.ManyToManyField(
         PredictionModel,
         related_name='model_tags',
+        blank=True,
     )
 
     def __str__(self):
@@ -45,7 +47,7 @@ class DataBlock(models.Model):
         on_delete=models.CASCADE, 
         related_name='data_blocks'
     )
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     upload = models.FileField(upload_to='uploads/')
 
     def __str__(self):
@@ -60,7 +62,7 @@ class ConstraintBlock(models.Model):
         on_delete=models.CASCADE,
         related_name='constraint_blocks',
     )
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
 
     def __str__(self):
         return "ConstraintBlock: %s" % (self.name)
@@ -80,7 +82,7 @@ class Constraint(models.Model):
         on_delete=models.CASCADE, 
         related_name='constraints',
     )
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     in_equality = models.CharField(max_length=3, choices=RELATIONSHIP_CHOICES)
     rhs_constant = models.FloatField()
 
@@ -95,7 +97,7 @@ class ConstraintParameter(models.Model):
         ConstraintBlock,
         on_delete=models.CASCADE,
     )
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
 
 class ConstraintParameterRelationship(models.Model):
     """Relationship connecting Constraint and ConstraintParameter"""

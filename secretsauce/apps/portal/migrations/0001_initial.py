@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
             name='Constraint',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=200)),
+                ('name', models.CharField(max_length=200, unique=True)),
                 ('in_equality', models.CharField(choices=[('LEQ', 'Less than or equal to'), ('GEQ', 'Greater than or equal to'), ('EQ', 'Equal to')], max_length=3)),
                 ('rhs_constant', models.FloatField()),
             ],
@@ -29,14 +29,14 @@ class Migration(migrations.Migration):
             name='ConstraintBlock',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=200)),
+                ('name', models.CharField(max_length=200, unique=True)),
             ],
         ),
         migrations.CreateModel(
             name='ConstraintParameter',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=200)),
+                ('name', models.CharField(max_length=200, unique=True)),
                 ('constraint_block', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='portal.ConstraintBlock')),
             ],
         ),
@@ -45,32 +45,33 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=200)),
-                ('description', models.TextField()),
+                ('description', models.TextField(blank=True, verbose_name='Model Description')),
             ],
         ),
         migrations.CreateModel(
             name='Project',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('title', models.CharField(max_length=200, verbose_name='Project Title')),
+                ('title', models.CharField(max_length=200, unique=True, verbose_name='Project Title')),
                 ('description', models.TextField(blank=True, verbose_name='Project Description')),
                 ('cover', models.ImageField(blank=True, upload_to='cover_images/')),
                 ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='account.Company')),
-                ('owners', models.ManyToManyField(to=settings.AUTH_USER_MODEL)),
+                ('owners', models.ManyToManyField(blank=True, to=settings.AUTH_USER_MODEL)),
             ],
         ),
         migrations.CreateModel(
             name='ModelTag',
             fields=[
-                ('name', models.CharField(max_length=200, primary_key=True, serialize=False, unique=True)),
-                ('prediction_model', models.ManyToManyField(related_name='model_tags', to='portal.PredictionModel')),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=200, unique=True)),
+                ('models', models.ManyToManyField(blank=True, related_name='model_tags', to='portal.PredictionModel')),
             ],
         ),
         migrations.CreateModel(
             name='DataBlock',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=200)),
+                ('name', models.CharField(max_length=200, unique=True)),
                 ('upload', models.FileField(upload_to='uploads/')),
                 ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='data_blocks', to='portal.Project')),
             ],

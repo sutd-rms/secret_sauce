@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, mixins, generics, permissions, authentication
+from rest_framework.exceptions import ErrorDetail
 
 from djoser import signals
 from djoser.compat import get_user_email
@@ -33,26 +34,25 @@ class InviteUser(generics.CreateAPIView):
     permission_classes = [permissions.IsAdminUser]
 
     def create(self, request):
-        password = generatePassword()
-        user_email = request.data['email']
-        company_id = request.data['company']
+        data = request.data.copy()
+        passsword = generatePassword()
+        data.update({'password': passsword})
+        serializer = UserCreateSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            mappings = {
+            'email': serializer.data.get('email'),
+            'password':  passsword,
+            }
+            send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [mappings['email']], '', 'create_user.html', mappings)
 
-        company_instance = Company.objects.get(pk=company_id)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        user = User.objects.create_user(
-            user_email,
-            password,
-            company = company_instance
-        )
-        user.save()
-        serializer=UserCreateSerializer(user)
-
-        mappings = {
-            'email': user_email,
-            'password':  password,
-        }
-
-        send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [user_email], '', 'create_user.html', mappings)
-
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors['email'])
+        if ErrorDetail(string='user with this email address already exists.', code='unique') in serializer.errors['email']:
+            mappings = {
+            'email': serializer.data.get('email'),
+            'password':  serializer.data.get('password'),
+            }
+            send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [mappings['email']], '', 'create_user.html', mappings)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
