@@ -6,17 +6,11 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from secretsauce.utils import reverse_args
 from secretsauce.apps.account.models import *
 from secretsauce.apps.account.serializers import *
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.views import *
-
-def reverse_args(name):
-    """
-    Helper function to reverse URL with arguments.
-    Returns a function whose parameters are the URL arguments.
-    """
-    return lambda *args: reverse(name, args=tuple(args)) 
 
 class ProjectTests(APITestCase):
     def setUp(self):
@@ -32,7 +26,7 @@ class ProjectTests(APITestCase):
         self.project_data = {
             'title': "My first project",
             'company': self.company.id,
-            'owners': [self.admin.email],
+            'owners': [self.admin.id],
         }
         self.list_url = reverse('project-list')
         self.detail_url = reverse_args('project-detail')
@@ -106,7 +100,7 @@ class ProjectTests(APITestCase):
         # Add user as owner
         self.client.force_authenticate(user=self.admin)
         response = self.client.patch(self.detail_url(project_id), data={
-            'owners': [self.admin.email, self.user.email]
+            'owners': [self.admin.id, self.user.id]
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

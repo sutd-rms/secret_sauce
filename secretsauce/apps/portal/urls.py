@@ -14,8 +14,8 @@ from secretsauce.apps.portal import views
 # all endpoints available please view: https://djoser.readthedocs.io/en/latest/base_endpoints.html
 
 urlpatterns = [
-    path('datablocks/', views.DataBlockList.as_view()),
-    path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view()),
+    path('datablocks/', views.DataBlockList.as_view(), name='data-block-list'),
+    path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view(), name='data-block-detail'),
     path('projects/', views.ProjectList.as_view(), name='project-list'),
     path('projects/<uuid:pk>', views.ProjectDetail.as_view(), name='project-detail'),
     path('constraintblocks/', views.ConstraintBlockList.as_view(), name='constraint-block-list'),
@@ -25,7 +25,9 @@ urlpatterns = [
     path('constraintparameter/', views.ConstraintParameterList.as_view(), name='constraint-parameter-list'),
     path('constraintparameter/<uuid:pk>', views.ConstraintParameterList.as_view(), name='constraint-parameter-list'),
     path('constraintrelationship/', views.ConstraintRelationshipCreate.as_view(), name='constraint-relationship-create'),
-    path('constraintrelationship/<uuid:pk>', views.ConstraintRelationshipDetail.as_view(), name='constraint-relationhip-detail'),
-    path('predictionmodel/', views.PredictionModelList.as_view()),
-    path('predictionmodel/<uuid:pk>', views.PredictionModelDetail.as_view()),
+    path('constraintrelationship/<uuid:pk>', views.ConstraintRelationshipDetail.as_view(), name='constraint-relationship-detail'),
+    path('predictionmodel/', views.PredictionModelList.as_view(), name='prediction-model-list'),
+    path('predictionmodel/<uuid:pk>', views.PredictionModelDetail.as_view(), name='prediction-model-detail'),
+    path('modeltag/', views.ModelTagList.as_view(), name='model-tag-list'),
+    path('modeltag/<int:pk>', views.ModelTagDetail.as_view(), name='model-tag-detail'),
 ]

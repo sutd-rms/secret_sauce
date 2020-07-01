@@ -1,3 +1,5 @@
+from django.urls import reverse
+
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import APIException
 from django.template import loader
@@ -6,6 +8,13 @@ from django.core.mail import send_mail
 import random
 import string
 import csv, io
+
+def reverse_args(name):
+    """
+    Helper function to reverse URL with arguments.
+    Returns a function whose parameters are the URL arguments.
+    """
+    return lambda *args: reverse(name, args=tuple(args)) 
 
 def custom_exception_handler(exc, context):
     # Call REST framework's default exception handler first, 
