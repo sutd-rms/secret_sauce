@@ -34,15 +34,15 @@ class InviteUser(generics.CreateAPIView):
     permission_classes = [permissions.IsAdminUser]
 
     def create(self, request):
-        # request.data.update({'password': generatePassword()})
         data = request.data.copy()
-        data.update({'password': generatePassword()})
+        passsword = generatePassword()
+        data.update({'password': passsword})
         serializer = UserCreateSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             mappings = {
             'email': serializer.data.get('email'),
-            'password':  serializer.data.get('password'),
+            'password':  passsword,
             }
             send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [mappings['email']], '', 'create_user.html', mappings)
 
