@@ -3,7 +3,22 @@ from rest_framework import serializers
 
 from secretsauce.apps.portal.models import *
 
+class HeaderSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Header
+        fields = ['item_id']
+
+class SchemaSerializer(serializers.ModelSerializer):
+    headers = HeaderSerializer(many=True, required=False, read_only=True)
+
+    class Meta:
+        model = Schema
+        fields = '__all__'
+
 class DataBlockSerializer(serializers.ModelSerializer):
+    schema = SchemaSerializer(required=False, read_only=True)
+
     class Meta:
         model = DataBlock
         fields = '__all__'

@@ -67,8 +67,10 @@ class UploadVerifier:
         except:
             raise UnreadableCSVFile()
 
-        self.check_headers()
-        self.check_type()
+        checks = [getattr(self, m) for m in dir(self) if m.startswith('check_')]
+        for m in checks:
+            m()
+            self.reset_seeker()
 
     def check_headers(self):
         """Raises WrongHeaderCSVFile if there are issues related to the structure of the csv file"""
@@ -76,18 +78,28 @@ class UploadVerifier:
         for idx, header in enumerate(first_row):
             if header != self.headers[idx]:
                 raise WrongHeaderCSVFile()
-        self.io_obj.seek(0)
-        self.csv_file = csv.DictReader(self.io_obj)
         
     def check_type(self):
         """Raises WrongCellTypeCSVFile if there are issues related to the structure of the csv file"""
         for row in self.csv_file:
+            # row is an OrderedDict of (header, value)
             for header in row:
                 value = row[header]
                 try:
                     float(value)
                 except:
                     raise WrongCellTypeCSVFile()
+
+    def reset_seeker(self):
+        self.io_obj.seek(0)
+        self.csv_file = csv.DictReader(self.io_obj)
+
+    def get_schema(self):
+        """Returns list of unique Item_IDs from uploaded file"""
+        required_header = self.headers[4]
+        item_ids = map(lambda row: int(row[required_header]), self.csv_file)
+        self.reset_seeker()
+        return set(item_ids)
 
 def send_email(subject, from_email, to_email, message, html_message_path, mappings={}):
     html_message = loader.render_to_string(

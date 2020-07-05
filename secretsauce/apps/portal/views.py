@@ -24,12 +24,18 @@ class DataBlockList(generics.ListCreateAPIView):
     serializer_class = DataBlockSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            UploadVerifier(request.FILES['upload'])
-            serializer.save()
+            item_ids = UploadVerifier(request.FILES['upload']).get_schema()
+            self.perform_create(serializer, item_ids)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer, item_ids):
+        data_block = serializer.save()
+        schema = Schema.objects.create(data_block=data_block)
+        for item_id in item_ids:
+            Header.objects.create(schema=schema, item_id=item_id)
 
     def get_queryset(self):
         assert self.queryset is not None, (
