@@ -67,8 +67,11 @@ class UploadVerifier:
         except:
             raise UnreadableCSVFile()
 
-        checks = [getattr(self, m) for m in dir(self) if m.startswith('check_')]
-        for m in checks:
+        self.checks = [getattr(self, m) for m in dir(self) if m.startswith('check_')]
+        self.perform_checks()
+    
+    def perform_checks(self):
+        for m in self.checks:
             m()
             self.reset_seeker()
 
@@ -111,3 +114,21 @@ def send_email(subject, from_email, to_email, message, html_message_path, mappin
 def generatePassword(stringLength=10):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))    
+
+class CostSheetVerifier(UploadVerifier):
+
+    headers = ['Store', 'Center', 'iMenuCatNo', 'Item', 'iName', 'Qty', 'Cost', 'Price', 'Price_Floor', 'Price_Cap']
+
+    def check_type(self):
+        pass
+
+    def get_items(self):
+        items = dict()
+        for row in self.csv_file:
+            item_id = row['Item']
+            item_name = row['iName']
+            item_cost = row['Cost']
+            if item_id in items: continue
+            items[item_id] = (item_name, item_cost)
+        self.reset_seeker()
+        return items

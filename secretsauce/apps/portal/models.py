@@ -137,3 +137,20 @@ class Header(models.Model):
     )
     item_id = models.IntegerField()
 
+class ItemList(models.Model):
+    """List of items obtained from cost sheet."""
+    project = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+    )
+
+class Item(models.Model):
+    """Item obtained from Cost Sheet"""
+    item_list = models.ForeignKey(
+        ItemList,
+        on_delete=models.CASCADE,
+        related_name='items',
+    )
+    name = models.CharField(max_length=200)
+    item_id = models.IntegerField()
+    cost = models.FloatField(blank=True)

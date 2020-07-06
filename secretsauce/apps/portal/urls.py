@@ -30,4 +30,5 @@ urlpatterns = [
     path('predictionmodel/<uuid:pk>', views.PredictionModelDetail.as_view(), name='prediction-model-detail'),
     path('modeltag/', views.ModelTagList.as_view(), name='model-tag-list'),
     path('modeltag/<int:pk>', views.ModelTagDetail.as_view(), name='model-tag-detail'),
+    path('itemlist/', views.ItemListList.as_view(), name='itemlist-list')
 ]

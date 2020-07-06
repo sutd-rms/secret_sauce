@@ -67,3 +67,16 @@ class ModelTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModelTag
         fields = '__all__'
+
+class ItemSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+class ItemListSerializer(serializers.ModelSerializer):
+    items = ItemSerializer(many=True, required=False, read_only=True)
+
+    class Meta:
+        model = ItemList
+        fields  = '__all__'
