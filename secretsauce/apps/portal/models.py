@@ -121,7 +121,7 @@ class ConstraintParameterRelationship(models.Model):
     )
     coefficient = models.FloatField()
 
-class Schema(models.Model):
+class DataBlockSchema(models.Model):
     """List of headers found in a DataBlock"""
     data_block = models.OneToOneField(
         DataBlock,
@@ -129,16 +129,16 @@ class Schema(models.Model):
         related_name='schema',
     )
 
-class Header(models.Model):
+class DataBlockHeader(models.Model):
     schema = models.ForeignKey(
-        Schema,
+        DataBlockSchema,
         on_delete=models.CASCADE,
-        related_name='headers',
+        related_name='data_block_headers',
     )
     item_id = models.IntegerField()
 
-class ItemList(models.Model):
-    """List of items obtained from cost sheet."""
+class ItemDirectory(models.Model):
+    """Directory of items obtained from cost sheet."""
     project = models.OneToOneField(
         Project,
         on_delete=models.CASCADE,
@@ -146,8 +146,8 @@ class ItemList(models.Model):
 
 class Item(models.Model):
     """Item obtained from Cost Sheet"""
-    item_list = models.ForeignKey(
-        ItemList,
+    item_directory = models.ForeignKey(
+        ItemDirectory,
         on_delete=models.CASCADE,
         related_name='items',
     )

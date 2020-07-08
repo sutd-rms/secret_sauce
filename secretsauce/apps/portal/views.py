@@ -35,9 +35,9 @@ class DataBlockList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer, item_ids):
         data_block = serializer.save()
-        schema = Schema.objects.create(data_block=data_block)
-        header_objects = [Header(schema=schema, item_id=item_id) for item_id in item_ids]
-        Header.objects.bulk_create(header_objects)
+        schema = DataBlockSchemaSchema.objects.create(data_block=data_block)
+        header_objects = [DataBlockHeader(schema=schema, item_id=item_id) for item_id in item_ids]
+        DataBlockHeader.objects.bulk_create(header_objects)
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -212,11 +212,11 @@ class ModelTagDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = ModelTag.objects.all()
     serializer_class = ModelTagSerializer
 
-class ItemListList(generics.ListCreateAPIView):
+class ItemDirectoryList(generics.ListCreateAPIView):
 
     permission_classes = [IsOwnerOrAdmin]
-    queryset = ItemList.objects.all()
-    serializer_class = ItemListSerializer
+    queryset = ItemDirectory.objects.all()
+    serializer_class = ItemDirectorySerializer
     parser_classes = [MultiPartParser]
 
     def create(self, request, *args, **kwargs):
@@ -231,14 +231,14 @@ class ItemListList(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer, items):
-        item_list = serializer.save()
-        item_objs = [Item(item_list=item_list, name=name, item_id=item_id, cost=cost) for item_id, (name, cost) in items.items()]
+        item_directory = serializer.save()
+        item_objs = [Item(item_directory=item_directory, name=name, item_id=item_id, cost=cost) for item_id, (name, cost) in items.items()]
         Item.objects.bulk_create(item_objs)
 
     def delete(self, request, *args, **kwargs):
         project = request.data['project']
         if not self.get_queryset().filter(project=project).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST, data="ItemList does not exist.")
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="ItemDirectory does not exist.")
         instance = self.get_queryset().get(project=project)
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
