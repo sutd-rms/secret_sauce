@@ -56,3 +56,14 @@ class InviteUser(generics.CreateAPIView):
             }
             send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [mappings['email']], '', 'create_user.html', mappings)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
+
+class EditProfile(APIView):
+    
+    def patch(self, request, format=None):
+        user = self.request.user
+        serializer = EditProfileSerializer(user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
