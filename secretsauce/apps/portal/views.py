@@ -1,8 +1,9 @@
-from rest_framework import generics, status, permissions, mixins
+from rest_framework import generics, status, permissions, mixins, views
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.decorators import permission_classes
+from rest_framework.exceptions import ParseError
 
 from django.core.files.storage import default_storage
 from django.db.models.query import QuerySet
@@ -10,7 +11,7 @@ from django.db.models.query import QuerySet
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
 from secretsauce.permissions import IsOwnerOrAdmin, AdminOrReadOnly
-from secretsauce.utils import UploadVerifier
+from secretsauce.utils import UploadVerifier, CostSheetVerifier
 
 class DataBlockList(generics.ListCreateAPIView):
     """
@@ -22,14 +23,21 @@ class DataBlockList(generics.ListCreateAPIView):
     """
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSerializer
+    parser_classes = [MultiPartParser]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            UploadVerifier(request.FILES['upload'])
-            serializer.save()
+            item_ids = UploadVerifier(request.FILES['upload']).get_schema()
+            self.perform_create(serializer, item_ids)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer, item_ids):
+        data_block = serializer.save()
+        schema = DataBlockSchemaSchema.objects.create(data_block=data_block)
+        header_objects = [DataBlockHeader(schema=schema, item_id=item_id) for item_id in item_ids]
+        DataBlockHeader.objects.bulk_create(header_objects)
 
     def get_queryset(self):
         assert self.queryset is not None, (
@@ -203,3 +211,37 @@ class ModelTagDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [AdminOrReadOnly]
     queryset = ModelTag.objects.all()
     serializer_class = ModelTagSerializer
+
+class ItemDirectoryList(generics.ListCreateAPIView):
+
+    permission_classes = [IsOwnerOrAdmin]
+    queryset = ItemDirectory.objects.all()
+    serializer_class = ItemDirectorySerializer
+    parser_classes = [MultiPartParser]
+
+    def create(self, request, *args, **kwargs):
+        if 'file' not in request.data:
+                raise ParseError(detail='file is required', code='required')
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            file_obj = request.data['file']
+            items = CostSheetVerifier(file_obj).get_items()
+            self.perform_create(serializer, items)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer, items):
+        item_directory = serializer.save()
+        item_objs = [Item(item_directory=item_directory, name=name, item_id=item_id, cost=cost) for item_id, (name, cost) in items.items()]
+        Item.objects.bulk_create(item_objs)
+
+    def delete(self, request, *args, **kwargs):
+        project = request.data['project']
+        if not self.get_queryset().filter(project=project).exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="ItemDirectory does not exist.")
+        instance = self.get_queryset().get(project=project)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def perform_destroy(self, instance):
+        instance.delete()

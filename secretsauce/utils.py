@@ -67,8 +67,13 @@ class UploadVerifier:
         except:
             raise UnreadableCSVFile()
 
-        self.check_headers()
-        self.check_type()
+        self.checks = [getattr(self, m) for m in dir(self) if m.startswith('check_')]
+        self.perform_checks()
+    
+    def perform_checks(self):
+        for m in self.checks:
+            m()
+            self.reset_seeker()
 
     def check_headers(self):
         """Raises WrongHeaderCSVFile if there are issues related to the structure of the csv file"""
@@ -76,18 +81,28 @@ class UploadVerifier:
         for idx, header in enumerate(first_row):
             if header != self.headers[idx]:
                 raise WrongHeaderCSVFile()
-        self.io_obj.seek(0)
-        self.csv_file = csv.DictReader(self.io_obj)
         
     def check_type(self):
         """Raises WrongCellTypeCSVFile if there are issues related to the structure of the csv file"""
         for row in self.csv_file:
+            # row is an OrderedDict of (header, value)
             for header in row:
                 value = row[header]
                 try:
                     float(value)
                 except:
                     raise WrongCellTypeCSVFile()
+
+    def reset_seeker(self):
+        self.io_obj.seek(0)
+        self.csv_file = csv.DictReader(self.io_obj)
+
+    def get_schema(self):
+        """Returns list of unique Item_IDs from uploaded file"""
+        required_header = self.headers[4]
+        item_ids = map(lambda row: int(row[required_header]), self.csv_file)
+        self.reset_seeker()
+        return set(item_ids)
 
 def send_email(subject, from_email, to_email, message, html_message_path, mappings={}):
     html_message = loader.render_to_string(
@@ -99,3 +114,21 @@ def send_email(subject, from_email, to_email, message, html_message_path, mappin
 def generatePassword(stringLength=10):
     lettersAndDigits = string.ascii_letters + string.digits
     return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))    
+
+class CostSheetVerifier(UploadVerifier):
+
+    headers = ['Store', 'Center', 'iMenuCatNo', 'Item', 'iName', 'Qty', 'Cost', 'Price', 'Price_Floor', 'Price_Cap']
+
+    def check_type(self):
+        pass
+
+    def get_items(self):
+        items = dict()
+        for row in self.csv_file:
+            item_id = row['Item']
+            item_name = row['iName']
+            item_cost = row['Cost']
+            if item_id in items: continue
+            items[item_id] = (item_name, item_cost)
+        self.reset_seeker()
+        return items

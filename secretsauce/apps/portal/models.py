@@ -67,13 +67,19 @@ class ConstraintBlock(models.Model):
     def __str__(self):
         return "ConstraintBlock: %s" % (self.name)
 
+    def get_formatted_json(self):
+        # TODO: Retrieve JSON formatted for GA optimizer
+        pass
+
 class Constraint(models.Model):
     """A single constraint"""
 
     RELATIONSHIP_CHOICES = [
+        ("LT", "Strictly less than"), # 1
+        ("GT", "Strictly greater than"), # 2
         ("LEQ", "Less than or equal to"),
         ("GEQ", "Greater than or equal to"),
-        ("EQ", "Equal to")
+        ("EQ", "Equal to"), # 0
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -82,9 +88,10 @@ class Constraint(models.Model):
         on_delete=models.CASCADE, 
         related_name='constraints',
     )
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=500, unique=True)
     in_equality = models.CharField(max_length=3, choices=RELATIONSHIP_CHOICES)
     rhs_constant = models.FloatField()
+    penalty = models.FloatField(default=0)
 
     def __str__(self):
         return "Constraint: %s" % (self.name)
@@ -113,3 +120,37 @@ class ConstraintParameterRelationship(models.Model):
         on_delete=models.CASCADE,
     )
     coefficient = models.FloatField()
+
+class DataBlockSchema(models.Model):
+    """List of headers found in a DataBlock"""
+    data_block = models.OneToOneField(
+        DataBlock,
+        on_delete=models.CASCADE,
+        related_name='schema',
+    )
+
+class DataBlockHeader(models.Model):
+    schema = models.ForeignKey(
+        DataBlockSchema,
+        on_delete=models.CASCADE,
+        related_name='data_block_headers',
+    )
+    item_id = models.IntegerField()
+
+class ItemDirectory(models.Model):
+    """Directory of items obtained from cost sheet."""
+    project = models.OneToOneField(
+        Project,
+        on_delete=models.CASCADE,
+    )
+
+class Item(models.Model):
+    """Item obtained from Cost Sheet"""
+    item_directory = models.ForeignKey(
+        ItemDirectory,
+        on_delete=models.CASCADE,
+        related_name='items',
+    )
+    name = models.CharField(max_length=200)
+    item_id = models.IntegerField()
+    cost = models.FloatField(blank=True)
