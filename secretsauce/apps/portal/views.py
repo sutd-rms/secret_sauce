@@ -5,13 +5,16 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.decorators import permission_classes
 from rest_framework.exceptions import ParseError
 
-from django.core.files.storage import default_storage
 from django.db.models.query import QuerySet
+from django.http import Http404
 
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
 from secretsauce.permissions import IsOwnerOrAdmin, AdminOrReadOnly
 from secretsauce.utils import UploadVerifier, CostSheetVerifier
+
+import pandas as pd
+from collections import defaultdict
 
 class DataBlockList(generics.ListCreateAPIView):
     """
@@ -245,3 +248,58 @@ class ItemDirectoryList(generics.ListCreateAPIView):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+class GetDataBlock(views.APIView):
+
+    parser_classes = [MultiPartParser]
+    queryset = DataBlock.objects.all()
+    max_query_size = 10
+
+    def get(self, request, pk, *args, **kwargs):
+        data_block = self.get_object(pk)
+
+        if 'query' not in request.data or 'items' not in request.data:
+            raise ParseError(detail='Query and Items required', code='invalid_data')
+
+        query = request.data.get('query')
+        items = request.data.getlist('items')
+
+        if len(items) > self.max_query_size:
+            raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
+
+        
+        if query == 'price':
+            body = self.obtain_prices(data_block.upload, items)
+        elif query == 'quantity':
+            body = self.obtain_quantities(data_block.upload, items)
+        else:
+            raise ParseError(detail="Query is not well specified, please specify 'price' or 'quantity' ", code='invalid_query')
+
+        return Response(body, status=status.HTTP_200_OK)
+
+    def get_object(self, pk):
+        try:
+            return DataBlock.objects.get(id=pk)
+        except DataBlock.DoesNotExist:
+            raise Http404
+
+    def obtain_prices(self, file, items):
+        df = pd.read_csv(file, encoding='utf-8')
+        df = df[df['Item_ID'].isin(items)][['Item_ID', 'Price_']]
+        output = defaultdict(list)
+        for idx, row in df.iterrows():
+            item_id = str(int(row['Item_ID']))
+            price = row['Price_']
+            output[item_id].append(price)
+        return output
+
+    def obtain_quantities(self, file, items):
+        df = pd.read_csv(file, encoding='utf-8')
+        df = df[df['Item_ID'].isin(items)]
+        output = defaultdict(list)
+        for idx, row in df.iterrows():
+            item_id = row['Item_ID']
+            week = row['Wk']
+            qty = row['Qty_']
+            output[item_id].append((int(week), qty))
+        return output
