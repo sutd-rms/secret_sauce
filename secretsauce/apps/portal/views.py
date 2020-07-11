@@ -288,18 +288,32 @@ class GetDataBlock(views.APIView):
         df = df[df['Item_ID'].isin(items)][['Item_ID', 'Price_']]
         output = defaultdict(list)
         for idx, row in df.iterrows():
-            item_id = str(int(row['Item_ID']))
+            item_id = int(row['Item_ID'])
             price = row['Price_']
             output[item_id].append(price)
-        return output
+        final_output = sorted([(k, v) for k, v in output.items()], key=lambda x: x[0])
+        items, datasets = zip(*final_output)
+        final_output = {
+            'items': items,
+            'datasets': datasets
+        }
+        return final_output
 
     def obtain_quantities(self, file, items):
         df = pd.read_csv(file, encoding='utf-8')
         df = df[df['Item_ID'].isin(items)]
         output = defaultdict(list)
+        weeks = set()
         for idx, row in df.iterrows():
-            item_id = row['Item_ID']
-            week = row['Wk']
+            item_id = int(row['Item_ID'])
+            week = int(row['Wk'])
+            weeks.add(week)
             qty = row['Qty_']
-            output[item_id].append((int(week), qty))
-        return output
+            while len(output[item_id]) < week:
+                output[item_id].append(None)
+            output[item_id][week - 1] = qty
+        final_output = {
+            'weeks': sorted(list(weeks)),
+            'datasets': output,
+        }
+        return final_output
