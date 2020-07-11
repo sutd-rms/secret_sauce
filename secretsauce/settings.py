@@ -153,6 +153,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MEDIA_ROOT = BASE_DIR + '/MEDIA/'
+MEDIA_URL = '/MEDIA/'
 
 SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 
