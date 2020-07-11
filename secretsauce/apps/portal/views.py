@@ -35,7 +35,7 @@ class DataBlockList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer, item_ids):
         data_block = serializer.save()
-        schema = DataBlockSchemaSchema.objects.create(data_block=data_block)
+        schema = DataBlockSchema.objects.create(data_block=data_block)
         header_objects = [DataBlockHeader(schema=schema, item_id=item_id) for item_id in item_ids]
         DataBlockHeader.objects.bulk_create(header_objects)
 
