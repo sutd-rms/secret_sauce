@@ -98,7 +98,14 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'EMAIL_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
-    'PASSWORD_RESET_CONFIRM_URL': 'password-reset/confirm/{uid}/{token}'
+    'PASSWORD_RESET_CONFIRM_URL': 'password-reset/confirm/{uid}/{token}',
+    'SERIALIZERS':{
+        'user': 'secretsauce.apps.account.serializers.CustomUserSerializer',
+        'current_user': 'secretsauce.apps.account.serializers.CustomUserSerializer',
+    },
+    'PERMISSIONS':{
+        'user': ['rest_framework.permissions.IsAdminUser'],
+    },
 }
 
 WSGI_APPLICATION = 'secretsauce.wsgi.application'
