@@ -6,7 +6,7 @@ from rest_framework.decorators import permission_classes
 from rest_framework.exceptions import ParseError
 
 from django.db.models.query import QuerySet
-from django.http import Http404
+from django.http import FileResponse, Http404
 
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
@@ -65,6 +65,14 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
     permission_classes = [IsOwnerOrAdmin]
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSerializer
+
+    def retrieve(self, request, pk, *args, **kwargs):
+        if self.get_queryset().filter(id=pk):
+            upload = self.get_queryset().get(id=pk).upload
+            response = FileResponse(upload, status=status.HTTP_200_OK, content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="{upload.name}.csv"'
+            return response
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class ProjectList(generics.ListCreateAPIView):
 
