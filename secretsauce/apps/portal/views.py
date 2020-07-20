@@ -1,12 +1,12 @@
-from rest_framework import generics, status, permissions, mixins, views
-from rest_framework.views import APIView
+from rest_framework import generics, status, permissions, mixins, views, viewsets
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser
 from rest_framework.decorators import permission_classes
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import ParseError, ValidationError
 
 from django.db.models.query import QuerySet
 from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404
 
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
@@ -14,7 +14,13 @@ from secretsauce.permissions import IsOwnerOrAdmin, AdminOrReadOnly
 from secretsauce.utils import UploadVerifier, CostSheetVerifier
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from collections import defaultdict
+from threading import Thread
+import os, requests, json
+
+FILLET = 'https://fillet.azurewebsites.net'
 
 class DataBlockList(generics.ListCreateAPIView):
     """
@@ -38,8 +44,7 @@ class DataBlockList(generics.ListCreateAPIView):
 
     def perform_create(self, serializer, item_ids):
         data_block = serializer.save()
-        schema = DataBlockSchema.objects.create(data_block=data_block)
-        header_objects = [DataBlockHeader(schema=schema, item_id=item_id) for item_id in item_ids]
+        header_objects = [DataBlockHeader(data_block=data_block, item_id=item_id) for item_id in item_ids]
         DataBlockHeader.objects.bulk_create(header_objects)
 
     def get_queryset(self):
@@ -53,8 +58,7 @@ class DataBlockList(generics.ListCreateAPIView):
         if isinstance(queryset, QuerySet):
             # Ensure queryset is re-evaluated on each request.
             queryset = queryset.all()
-
-        project = self.request.query_params.get('project')
+        project = self.request.data.get('project')
         return queryset.filter(project=project)
         
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
@@ -91,113 +95,62 @@ class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
-class ConstraintBlockList(generics.ListCreateAPIView):
+class ConstraintBlockCreate(generics.CreateAPIView):
     """
-    List all constraint blocks related to a Project
-    Create new constraint block
+    Create new ConstraintBlock from a specified DataBlock schema
     """
 
     queryset = ConstraintBlock.objects.all()
     serializer_class = ConstraintBlockSerializer
 
-    def get_queryset(self):
-        assert self.queryset is not None, (
-        "'%s' should either include a `queryset` attribute, "
-        "or override the `get_queryset()` method."
-        % self.__class__.__name__
-        )
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                data_block = DataBlock.objects.get(id=self.request.data['data_block'])
+            except KeyError:
+                raise ParseError(detail="missing parameter: data_block")
+            except DataBlock.DoesNotExist:
+                raise Http404
+            self.perform_create(serializer)
+            constraint_block = get_object_or_404(ConstraintBlock.objects.all(), id=serializer.data['id'])
+            constraint_params = [ConstraintParameter(item_id=header.item_id, constraint_block=constraint_block) for header in data_block.schema.all()]
+            ConstraintParameter.objects.bulk_create(constraint_params)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            # Ensure queryset is re-evaluated on each request.
-            queryset = queryset.all()
-
-        project = self.request.query_params.get('project')
-        return queryset.filter(project=project)
-
-class ConstraintBlockDetail(generics.RetrieveUpdateDestroyAPIView):
+class ConstraintBlockItems(generics.ListAPIView):
     """
-    Retrieve/Update/Destroy a ConstraintBlock
-    """
-    permission_classes = [IsOwnerOrAdmin]
-    queryset = ConstraintBlock.objects.all()
-    serializer_class = ConstraintBlockSerializer
-
-class ConstraintList(generics.ListCreateAPIView):
-    """
-    List all constraints related to a ConstraintBlock
-    Create a new constraint related to a ConstraintBlock
-    """
-    queryset = Constraint.objects.all()
-    serializer_class = ConstraintSerializer
-
-    def get_queryset(self):
-        assert self.queryset is not None, (
-        "'%s' should either include a `queryset` attribute, "
-        "or override the `get_queryset()` method."
-        % self.__class__.__name__
-        )
-
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            # Ensure queryset is re-evaluated on each request.
-            queryset = queryset.all()
-
-        constraint_block = request.query_params.get('constraint_block')
-        return queryset.filter(constraint_block=constraint_block)
-
-class ConstraintDetail(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve/Update/Destroy a constraint
-    """
-    permission_classes = [IsOwnerOrAdmin]
-    queryset = Constraint.objects.all()
-    serializer_class = ConstraintSerializer
-
-class ConstraintParameterList(generics.ListCreateAPIView):
-    """
-    List all constraint parameters related to a ConstraintBlock
-    """
-    queryset = ConstraintParameter.objects.all()
-    serializer_class = ConstraintParameterSerializer
-
-    def get_queryset(self):
-        assert self.queryset is not None, (
-        "'%s' should either include a `queryset` attribute, "
-        "or override the `get_queryset()` method."
-        % self.__class__.__name__
-        )
-
-        queryset = self.queryset
-        if isinstance(queryset, QuerySet):
-            # Ensure queryset is re-evaluated on each request.
-            queryset = queryset.all()
-
-        constraint_block = request.query_params.get('constraint_block')
-        return queryset.filter(constraint_block=constraint_block)
-
-class ConstraintParameterDetail(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve/Update/Destroy a constraint parameter
+    Retrieve ConstraintParameters associated to a ConstraintBlock
     """
     permission_classes = [IsOwnerOrAdmin]
     queryset = ConstraintParameter.objects.all()
     serializer_class = ConstraintParameterSerializer
 
-class ConstraintRelationshipCreate(generics.CreateAPIView):
-    """
-    Create ConstraintParameterRelationship
-    """
-    queryset = ConstraintParameterRelationship.objects.all()
-    serializer_class = ConstraintParameterRelationshipSerializer
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
 
-class ConstraintRelationshipDetail(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Retrieve/Update/Destroy ConstraintParameterRelationship
-    """
-    permission_classes = [IsOwnerOrAdmin]
-    queryset = ConstraintParameterRelationship.objects.all()
-    serializer_class = ConstraintParameterRelationshipSerializer
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        project = ConstraintBlock.objects.get(id=self.kwargs.get('pk')).project
+        if project.cost_sheet:
+            items = project.items.all()
+            for constraint_param in serializer.data:
+                try:
+                    item_id = constraint_param.get('item_id')
+                    item_name = items.get(item_id=item_id).name
+                except Item.DoesNotExist:
+                    item_name = None
+                constraint_param['item_name'] = item_name
+        return Response(serializer.data)
+
+    def get_queryset(self):
+        cb = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
+        return self.queryset.filter(constraint_block=cb)
 
 class PredictionModelList(generics.ListCreateAPIView):
 
@@ -223,44 +176,50 @@ class ModelTagDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = ModelTag.objects.all()
     serializer_class = ModelTagSerializer
 
-class ItemDirectoryList(generics.ListCreateAPIView):
+class ProjectItems(views.APIView):
+    """
+    Upload or delete list of Items from a Project
+    """
 
     permission_classes = [IsOwnerOrAdmin]
-    queryset = ItemDirectory.objects.all()
-    serializer_class = ItemDirectorySerializer
     parser_classes = [MultiPartParser]
 
-    def create(self, request, *args, **kwargs):
-        if 'file' not in request.data:
-                raise ParseError(detail='file is required', code='required')
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
+    def post(self, request, pk, *args, **kwargs):
+        project = get_object_or_404(Project.objects.all(), id=pk)
+        
+        if project.cost_sheet:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="Cost sheet already uploaded")
+
+        try:
             file_obj = request.data['file']
-            items = CostSheetVerifier(file_obj).get_items()
-            self.perform_create(serializer, items)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except KeyError:
+            raise ParseError(detail='file is required', code='required')
 
-    def perform_create(self, serializer, items):
-        item_directory = serializer.save()
-        item_objs = [Item(item_directory=item_directory, name=name, item_id=item_id, cost=cost) for item_id, (name, cost) in items.items()]
+        items = CostSheetVerifier(file_obj).get_items()
+        self.perform_create(project, items)
+        return Response(status=status.HTTP_201_CREATED)
+
+    def perform_create(self, project, items):
+        item_objs = [Item(project=project, name=name, item_id=item_id, cost=cost) for item_id, (name, cost) in items.items()]
         Item.objects.bulk_create(item_objs)
+        project.cost_sheet = True
+        project.save()
 
-    def delete(self, request, *args, **kwargs):
-        project = request.data['project']
-        if not self.get_queryset().filter(project=project).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST, data="ItemDirectory does not exist.")
-        instance = self.get_queryset().get(project=project)
-        self.perform_destroy(instance)
+    def delete(self, request, pk, *args, **kwargs):
+        project = get_object_or_404(Project.objects.all(), id=pk)
+        if not project.cost_sheet:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="No cost sheet to delete")
+        self.perform_destroy(project)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def perform_destroy(self, instance):
-        instance.delete()
+        instance.items.all().delete()
+        instance.cost_sheet = False
+        instance.save()
 
 class GetDataBlock(views.APIView):
 
     parser_classes = [MultiPartParser]
-    queryset = DataBlock.objects.all()
     max_query_size = 10
 
     def get(self, request, pk, *args, **kwargs):
@@ -275,7 +234,6 @@ class GetDataBlock(views.APIView):
         if len(items) > self.max_query_size:
             raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
 
-        
         if query == 'price':
             body = self.obtain_prices(data_block.upload, items)
         elif query == 'quantity':
@@ -325,3 +283,69 @@ class GetDataBlock(views.APIView):
             'datasets': output,
         }
         return final_output
+
+class TrainModel(generics.ListCreateAPIView):
+
+    queryset = TrainedPredictionModel.objects.all()
+    serializer_class = TrainedPredictionModelSerializer
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            data_block = DataBlock.objects.get(id=serializer.data['data_block'])
+            df = pd.read_csv(data_block.upload, encoding='utf-8', )
+            table = pa.Table.from_pandas(df)
+            buf = pa.BufferOutputStream()
+            pq.write_table(table, buf)
+            files = {'data': buf.getvalue()}
+            payload = {'cv_acc': True, 'project_id': serializer.data['id']}
+            def r(url, data=None, files=None, timeout=None):
+                try:
+                    resp = requests.post(FILLET+'/train/', data=payload, files=files, timeout=(3.05, 10))
+                except requests.exceptions.ReadTimeout: 
+                    pass
+                except requests.exceptions.ConnectionTimeout:
+                    pass
+            Thread(target=r,
+                args=(FILLET + '/train/', ),
+                kwargs={
+                    'data': payload,
+                    'files': files,
+                    'timeout': (3.05, 10),
+                }).start()
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_queryset(self):
+        try:
+            project = Project.objects.get(id=self.request.data['project'])
+        except KeyError:
+            raise ParseError(detail="Please specify project")
+        except Project.DoesNotExist:
+            raise Http404
+        
+        data_blocks = project.data_blocks.all()
+        trained_models = self.queryset.filter(data_block__in=data_blocks)
+        for tm in trained_models:
+            if not tm.available:
+                payload = json.dumps({'project_id': str(tm.id)})
+                headers = {'content-type': 'application/json',
+                        'Accept-Charset': 'UTF-8'
+                        }
+                try:
+                    r = requests.post(FILLET + '/query_progress/', data=payload, headers=headers, timeout=1)
+                    if json.loads(r.content).get('pct_complete') == 100:
+                        tm.available = True
+                        tm.save()
+                except requests.exceptions.ReadTimeout:
+                    pass
+                except requests.exceptions.ConnectionTimeout:
+                    pass
+        return trained_models 
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return TraindePredictionModelDisplaySerializer
+        return TrainedPredictionModelSerializer

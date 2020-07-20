@@ -9,36 +9,20 @@ class DataBlockHeaderSerializer(serializers.ModelSerializer):
         model = DataBlockHeader
         fields = ['item_id']
 
-class DataBlockSchemaSerializer(serializers.ModelSerializer):
-    data_block_headers = DataBlockHeaderSerializer(many=True, required=False, read_only=True)
-
-    class Meta:
-        model = DataBlockSchema
-        fields = '__all__'
-
 class DataBlockSerializer(serializers.ModelSerializer):
-    schema = DataBlockSchemaSerializer(required=False, read_only=True)
+    schema = DataBlockHeaderSerializer(many=True, required=False, read_only=True)
 
     class Meta:
         model = DataBlock
         fields = '__all__'
 
 class ConstraintParameterSerializer(serializers.ModelSerializer):
+
+    item_name = serializers.CharField(max_length=200, required=False)
+
     class Meta:
         model = ConstraintParameter
-        fields = '__all__'
-
-class ConstraintParameterRelationshipSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ConstraintParameterRelationship
-        fields = '__all__'
-
-class ConstraintSerializer(serializers.ModelSerializer):
-    constraint_relationships = ConstraintParameterRelationshipSerializer(many=True, required=False, read_only=True)
-
-    class Meta:
-        model = Constraint
-        fields = '__all__'
+        fields = ['id', 'item_id', 'item_name']
 
 class ConstraintBlockSerializer(serializers.ModelSerializer):
     constraints = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
@@ -48,8 +32,8 @@ class ConstraintBlockSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ProjectSerializer(serializers.ModelSerializer):
-    data_blocks = DataBlockSerializer(many=True, required=False, read_only=True)
-    constraint_blocks = ConstraintBlockSerializer(many=True, required=False, read_only=True)
+    data_blocks = serializers.PrimaryKeyRelatedField(many=True, required=False, read_only=True)
+    constraint_blocks = serializers.PrimaryKeyRelatedField(many=True, required=False, read_only=True)
 
     class Meta:
         model = Project
@@ -74,9 +58,29 @@ class ItemSerializer(serializers.ModelSerializer):
         model = Item
         fields = '__all__'
 
-class ItemDirectorySerializer(serializers.ModelSerializer):
-    items = ItemSerializer(many=True, required=False, read_only=True)
+class TrainedPredictionModelSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = ItemDirectory
-        fields  = '__all__'
+        model = TrainedPredictionModel
+        fields = '__all__'
+
+class PredictionModelDisplaySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PredictionModel
+        fields = ['id', 'name']
+
+class DataBlockDisplaySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = DataBlock
+        fields = ['id', 'name']
+
+class TraindePredictionModelDisplaySerializer(serializers.ModelSerializer):
+
+    prediction_model = PredictionModelDisplaySerializer(required=True, many=False)
+    data_block = DataBlockDisplaySerializer(required=True, many=False)
+
+    class Meta:
+        model = TrainedPredictionModel
+        exclude =[]
