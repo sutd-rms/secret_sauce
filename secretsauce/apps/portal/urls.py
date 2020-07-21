@@ -16,15 +16,19 @@ from secretsauce.apps.portal import views
 urlpatterns = [
     path('datablocks/', views.DataBlockList.as_view(), name='data-block-list'),
     path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view(), name='data-block-detail'),
+    path('datablocks/<uuid:pk>/vizdata/', views.GetDataBlock.as_view()),
+
     path('projects/', views.ProjectList.as_view(), name='project-list'),
     path('projects/<uuid:pk>', views.ProjectDetail.as_view(), name='project-detail'),
+    path('projects/<uuid:pk>/items/', views.ProjectItems.as_view(), name='item-directory-list'),
+
     path('constraintsets/', views.ConstraintBlockCreate.as_view()),
-    path('constraintsets/<uuid:pk>', views.ConstraintBlockItems.as_view()),
-    path('predictionmodel/', views.PredictionModelList.as_view(), name='prediction-model-list'),
-    path('predictionmodel/<uuid:pk>', views.PredictionModelDetail.as_view(), name='prediction-model-detail'),
-    path('modeltag/', views.ModelTagList.as_view(), name='model-tag-list'),
-    path('modeltag/<int:pk>', views.ModelTagDetail.as_view(), name='model-tag-detail'),
-    path('projectitems/<uuid:pk>', views.ProjectItems.as_view(), name='item-directory-list'),
-    path('datablocks/getdata/<uuid:pk>', views.GetDataBlock.as_view()),
+    path('constraintsets/<uuid:pk>/parameters/', views.ConstraintBlockItems.as_view()),
+
+    path('predictionmodels/', views.PredictionModelList.as_view(), name='prediction-model-list'),
+    path('predictionmodels/<uuid:pk>', views.PredictionModelDetail.as_view(), name='prediction-model-detail'),
+    path('modeltags/', views.ModelTagList.as_view(), name='model-tag-list'),
+    path('modeltags/<int:pk>', views.ModelTagDetail.as_view(), name='model-tag-detail'),
+
     path('trainedmodels/', views.TrainModel.as_view()), 
 ]

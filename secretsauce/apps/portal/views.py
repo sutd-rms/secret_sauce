@@ -1,6 +1,6 @@
 from rest_framework import generics, status, permissions, mixins, views, viewsets
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import permission_classes
 from rest_framework.exceptions import ParseError, ValidationError
 
@@ -31,8 +31,8 @@ class DataBlockList(generics.ListCreateAPIView):
         list: curl localhost:8000/datablocks/
     """
     queryset = DataBlock.objects.all()
-    serializer_class = DataBlockSerializer
-    parser_classes = [MultiPartParser]
+    serializer_class = DataBlockListSerializer
+    parser_classes = [MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -68,15 +68,7 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
 
     permission_classes = [IsOwnerOrAdmin]
     queryset = DataBlock.objects.all()
-    serializer_class = DataBlockSerializer
-
-    def retrieve(self, request, pk, *args, **kwargs):
-        if self.get_queryset().filter(id=pk):
-            upload = self.get_queryset().get(id=pk).upload
-            response = FileResponse(upload, status=status.HTTP_200_OK, content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename="{upload.name}.csv"'
-            return response
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    serializer_class = DataBlockSingleSerializer
 
 class ProjectList(generics.ListCreateAPIView):
 
@@ -116,6 +108,18 @@ class ConstraintBlockCreate(generics.CreateAPIView):
             constraint_block = get_object_or_404(ConstraintBlock.objects.all(), id=serializer.data['id'])
             constraint_params = [ConstraintParameter(item_id=header.item_id, constraint_block=constraint_block) for header in data_block.schema.all()]
             ConstraintParameter.objects.bulk_create(constraint_params)
+            serializer = self.get_serializer(instance=self.get_queryset().get(id=serializer.data['id']))
+
+            project = constraint_block.project
+            if project.cost_sheet:
+                items = project.items.all()
+                for constraint_param in serializer.data['params']:
+                    try:
+                        item_id = constraint_param.get('item_id')
+                        item_name = items.get(item_id=item_id).name
+                    except Item.DoesNotExist:
+                        item_name = None
+                    constraint_param['item_name'] = item_name
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

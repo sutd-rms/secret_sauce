@@ -5,9 +5,8 @@ from rest_framework.exceptions import APIException
 from django.template import loader
 from django.core.mail import send_mail
 
-import random
-import string
-import csv, io
+import random, string, csv, io
+from secrets import token_urlsafe
 
 def reverse_args(name):
     """
@@ -132,3 +131,8 @@ class CostSheetVerifier(UploadVerifier):
             items[item_id] = (item_name, item_cost)
         self.reset_seeker()
         return items
+
+def obfuscate_upload_link(instance, filename):
+    secret = token_urlsafe(16)
+    return '/'.join([path, secret, filename])
+    

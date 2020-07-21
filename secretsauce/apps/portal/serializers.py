@@ -9,7 +9,13 @@ class DataBlockHeaderSerializer(serializers.ModelSerializer):
         model = DataBlockHeader
         fields = ['item_id']
 
-class DataBlockSerializer(serializers.ModelSerializer):
+class DataBlockListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = DataBlock
+        fields = '__all__'
+
+class DataBlockSingleSerializer(serializers.ModelSerializer):
     schema = DataBlockHeaderSerializer(many=True, required=False, read_only=True)
 
     class Meta:
@@ -25,7 +31,7 @@ class ConstraintParameterSerializer(serializers.ModelSerializer):
         fields = ['id', 'item_id', 'item_name']
 
 class ConstraintBlockSerializer(serializers.ModelSerializer):
-    constraints = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    params = ConstraintParameterSerializer(many=True, read_only=True)
 
     class Meta:
         model = ConstraintBlock

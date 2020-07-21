@@ -1,8 +1,9 @@
 from django.db import models
-from secretsauce.apps.account.models import User, Company
-import uuid
 
-# Create your models here.
+from secretsauce.apps.account.models import User, Company
+from secretsauce.utils import obfuscate_upload_link
+
+import uuid
 
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -49,7 +50,7 @@ class DataBlock(models.Model):
         related_name='data_blocks'
     )
     name = models.CharField(max_length=200, unique=True)
-    upload = models.FileField(upload_to='uploads/')
+    upload = models.FileField(upload_to=obfuscate_upload_link)
 
     def __str__(self):
         return "DataBlock: %s" % (self.name) 
@@ -104,6 +105,7 @@ class ConstraintParameter(models.Model):
     constraint_block = models.ForeignKey(
         ConstraintBlock,
         on_delete=models.CASCADE,
+        related_name='params',
     )
     item_id = models.IntegerField()
 
