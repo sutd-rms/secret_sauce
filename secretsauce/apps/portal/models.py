@@ -1,8 +1,9 @@
 from django.db import models
-from secretsauce.apps.account.models import User, Company
-import uuid
 
-# Create your models here.
+from secretsauce.apps.account.models import User, Company
+from secretsauce.utils import obfuscate_upload_link
+
+import uuid
 
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -17,6 +18,7 @@ class Project(models.Model):
         User,
         blank=True,
     )
+    cost_sheet = models.BooleanField(default=False)
 
     def __str__(self):
         return "%s: %s" % (self.company, self.title)
@@ -48,7 +50,7 @@ class DataBlock(models.Model):
         related_name='data_blocks'
     )
     name = models.CharField(max_length=200, unique=True)
-    upload = models.FileField(upload_to='uploads/')
+    upload = models.FileField(upload_to=obfuscate_upload_link)
 
     def __str__(self):
         return "DataBlock: %s" % (self.name) 
@@ -103,8 +105,9 @@ class ConstraintParameter(models.Model):
     constraint_block = models.ForeignKey(
         ConstraintBlock,
         on_delete=models.CASCADE,
+        related_name='params',
     )
-    name = models.CharField(max_length=200, unique=True)
+    item_id = models.IntegerField()
 
 class ConstraintParameterRelationship(models.Model):
     """Relationship connecting Constraint and ConstraintParameter"""
@@ -121,36 +124,38 @@ class ConstraintParameterRelationship(models.Model):
     )
     coefficient = models.FloatField()
 
-class DataBlockSchema(models.Model):
-    """List of headers found in a DataBlock"""
-    data_block = models.OneToOneField(
+class DataBlockHeader(models.Model):
+    data_block = models.ForeignKey(
         DataBlock,
         on_delete=models.CASCADE,
         related_name='schema',
     )
-
-class DataBlockHeader(models.Model):
-    schema = models.ForeignKey(
-        DataBlockSchema,
-        on_delete=models.CASCADE,
-        related_name='data_block_headers',
-    )
     item_id = models.IntegerField()
-
-class ItemDirectory(models.Model):
-    """Directory of items obtained from cost sheet."""
-    project = models.OneToOneField(
-        Project,
-        on_delete=models.CASCADE,
-    )
 
 class Item(models.Model):
     """Item obtained from Cost Sheet"""
-    item_directory = models.ForeignKey(
-        ItemDirectory,
+    project = models.ForeignKey(
+        Project,
         on_delete=models.CASCADE,
         related_name='items',
     )
     name = models.CharField(max_length=200)
     item_id = models.IntegerField()
     cost = models.FloatField(blank=True)
+
+class TrainedPredictionModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    prediction_model = models.ForeignKey(
+        PredictionModel,
+        on_delete=models.CASCADE,
+        related_name=None,
+    )
+    data_block = models.ForeignKey(
+        DataBlock,
+        on_delete=models.CASCADE,
+        related_name='trained_models',
+    )
+    name = models.CharField(max_length=200)
+    available = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    
