@@ -1,6 +1,6 @@
 from rest_framework import generics, status, permissions, mixins, views, viewsets
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.decorators import permission_classes
 from rest_framework.exceptions import ParseError, ValidationError
 
@@ -70,6 +70,73 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSingleSerializer
 
+class GetDataBlock(views.APIView):
+
+    parser_classes = [MultiPartParser]
+    max_query_size = 10
+
+    def get(self, request, pk, *args, **kwargs):
+        data_block = self.get_object(pk)
+
+        if 'query' not in request.data or 'items' not in request.data:
+            raise ParseError(detail='Query and Items required', code='invalid_data')
+
+        query = request.data.get('query')
+        items = request.data.getlist('items')
+
+        if len(items) > self.max_query_size:
+            raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
+
+        if query == 'price':
+            body = self.obtain_prices(data_block.upload, items)
+        elif query == 'quantity':
+            body = self.obtain_quantities(data_block.upload, items)
+        else:
+            raise ParseError(detail="Query is not well specified, please specify 'price' or 'quantity' ", code='invalid_query')
+
+        return Response(body, status=status.HTTP_200_OK)
+
+    def get_object(self, pk):
+        try:
+            return DataBlock.objects.get(id=pk)
+        except DataBlock.DoesNotExist:
+            raise Http404
+
+    def obtain_prices(self, file, items):
+        df = pd.read_csv(file, encoding='utf-8')
+        df = df[df['Item_ID'].isin(items)][['Item_ID', 'Price_']]
+        output = defaultdict(list)
+        for idx, row in df.iterrows():
+            item_id = int(row['Item_ID'])
+            price = row['Price_']
+            output[item_id].append(price)
+        final_output = sorted([(k, v) for k, v in output.items()], key=lambda x: x[0])
+        items, datasets = zip(*final_output)
+        final_output = {
+            'items': items,
+            'datasets': datasets
+        }
+        return final_output
+
+    def obtain_quantities(self, file, items):
+        df = pd.read_csv(file, encoding='utf-8')
+        df = df[df['Item_ID'].isin(items)]
+        output = defaultdict(list)
+        weeks = set()
+        for idx, row in df.iterrows():
+            item_id = int(row['Item_ID'])
+            week = int(row['Wk'])
+            weeks.add(week)
+            qty = row['Qty_']
+            while len(output[item_id]) < week:
+                output[item_id].append(None)
+            output[item_id][week - 1] = qty
+        final_output = {
+            'weeks': sorted(list(weeks)),
+            'datasets': output,
+        }
+        return final_output
+
 class ProjectList(generics.ListCreateAPIView):
 
     queryset = Project.objects.all()
@@ -86,6 +153,53 @@ class ProjectDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsOwnerOrAdmin]
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+class ProjectItems(views.APIView):
+    """
+    Upload or delete list of Items from a Project
+    """
+
+    permission_classes = [IsOwnerOrAdmin]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, pk, *args, **kwargs):
+        project = get_object_or_404(Project.objects.all(), id=pk)
+        
+        if project.cost_sheet:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="Cost sheet already uploaded")
+
+        try:
+            file_obj = request.data['file']
+        except KeyError:
+            raise ParseError(detail='file is required', code='required')
+
+        items = CostSheetVerifier(file_obj).get_items()
+        self.perform_create(project, items)
+        return Response(status=status.HTTP_201_CREATED)
+
+    def perform_create(self, project, items):
+        item_objs = [Item(project=project, 
+                          name=name, 
+                          item_id=item_id, 
+                          cost=cost, 
+                          price_current=current, 
+                          price_floor=floor, 
+                          price_cap=cap) for item_id, (name, cost, current, floor, cap) in items.items()]
+        Item.objects.bulk_create(item_objs)
+        project.cost_sheet = True
+        project.save()
+
+    def delete(self, request, pk, *args, **kwargs):
+        project = get_object_or_404(Project.objects.all(), id=pk)
+        if not project.cost_sheet:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data="No cost sheet to delete")
+        self.perform_destroy(project)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def perform_destroy(self, instance):
+        instance.items.all().delete()
+        instance.cost_sheet = False
+        instance.save()
 
 class ConstraintBlockCreate(generics.CreateAPIView):
     """
@@ -156,6 +270,27 @@ class ConstraintBlockItems(generics.ListAPIView):
         cb = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
         return self.queryset.filter(constraint_block=cb)
 
+class ConstraintListAndCreate(generics.ListCreateAPIView):
+    
+    queryset = Constraint.objects.all()
+    parser_classes =  [JSONParser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_queryset(self):
+        cb = self.request.query_params.get('constraint_block')
+        return self.queryset.filter(constraint_block=cb)
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ConstraintDisplaySerializer
+        return ConstraintCreateSerializer
+
 class PredictionModelList(generics.ListCreateAPIView):
 
     permission_classes = [AdminOrReadOnly]
@@ -179,114 +314,6 @@ class ModelTagDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [AdminOrReadOnly]
     queryset = ModelTag.objects.all()
     serializer_class = ModelTagSerializer
-
-class ProjectItems(views.APIView):
-    """
-    Upload or delete list of Items from a Project
-    """
-
-    permission_classes = [IsOwnerOrAdmin]
-    parser_classes = [MultiPartParser]
-
-    def post(self, request, pk, *args, **kwargs):
-        project = get_object_or_404(Project.objects.all(), id=pk)
-        
-        if project.cost_sheet:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data="Cost sheet already uploaded")
-
-        try:
-            file_obj = request.data['file']
-        except KeyError:
-            raise ParseError(detail='file is required', code='required')
-
-        items = CostSheetVerifier(file_obj).get_items()
-        self.perform_create(project, items)
-        return Response(status=status.HTTP_201_CREATED)
-
-    def perform_create(self, project, items):
-        item_objs = [Item(project=project, name=name, item_id=item_id, cost=cost) for item_id, (name, cost) in items.items()]
-        Item.objects.bulk_create(item_objs)
-        project.cost_sheet = True
-        project.save()
-
-    def delete(self, request, pk, *args, **kwargs):
-        project = get_object_or_404(Project.objects.all(), id=pk)
-        if not project.cost_sheet:
-            return Response(status=status.HTTP_400_BAD_REQUEST, data="No cost sheet to delete")
-        self.perform_destroy(project)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def perform_destroy(self, instance):
-        instance.items.all().delete()
-        instance.cost_sheet = False
-        instance.save()
-
-class GetDataBlock(views.APIView):
-
-    parser_classes = [MultiPartParser]
-    max_query_size = 10
-
-    def get(self, request, pk, *args, **kwargs):
-        data_block = self.get_object(pk)
-
-        if 'query' not in request.data or 'items' not in request.data:
-            raise ParseError(detail='Query and Items required', code='invalid_data')
-
-        query = request.data.get('query')
-        items = request.data.getlist('items')
-
-        if len(items) > self.max_query_size:
-            raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
-
-        if query == 'price':
-            body = self.obtain_prices(data_block.upload, items)
-        elif query == 'quantity':
-            body = self.obtain_quantities(data_block.upload, items)
-        else:
-            raise ParseError(detail="Query is not well specified, please specify 'price' or 'quantity' ", code='invalid_query')
-
-        return Response(body, status=status.HTTP_200_OK)
-
-    def get_object(self, pk):
-        try:
-            return DataBlock.objects.get(id=pk)
-        except DataBlock.DoesNotExist:
-            raise Http404
-
-    def obtain_prices(self, file, items):
-        df = pd.read_csv(file, encoding='utf-8')
-        df = df[df['Item_ID'].isin(items)][['Item_ID', 'Price_']]
-        output = defaultdict(list)
-        for idx, row in df.iterrows():
-            item_id = int(row['Item_ID'])
-            price = row['Price_']
-            output[item_id].append(price)
-        final_output = sorted([(k, v) for k, v in output.items()], key=lambda x: x[0])
-        items, datasets = zip(*final_output)
-        final_output = {
-            'items': items,
-            'datasets': datasets
-        }
-        return final_output
-
-    def obtain_quantities(self, file, items):
-        df = pd.read_csv(file, encoding='utf-8')
-        df = df[df['Item_ID'].isin(items)]
-        output = defaultdict(list)
-        weeks = set()
-        for idx, row in df.iterrows():
-            item_id = int(row['Item_ID'])
-            week = int(row['Wk'])
-            weeks.add(week)
-            qty = row['Qty_']
-            while len(output[item_id]) < week:
-                output[item_id].append(None)
-            output[item_id][week - 1] = qty
-        final_output = {
-            'weeks': sorted(list(weeks)),
-            'datasets': output,
-        }
-        return final_output
 
 class TrainModel(generics.ListCreateAPIView):
 

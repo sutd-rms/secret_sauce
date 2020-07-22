@@ -127,8 +127,11 @@ class CostSheetVerifier(UploadVerifier):
             item_id = row['Item']
             item_name = row['iName']
             item_cost = row['Cost']
+            price_current = row['Price']
+            price_floor = row['Price_Floor']
+            price_cap = row['Price_Cap']
             if item_id in items: continue
-            items[item_id] = (item_name, item_cost)
+            items[item_id] = (item_name, item_cost, price_current, price_floor, price_cap)
         self.reset_seeker()
         return items
 

@@ -69,7 +69,7 @@ class ConstraintBlock(models.Model):
     def __str__(self):
         return "ConstraintBlock: %s" % (self.name)
 
-    def get_formatted_json(self):
+    def get_formatted_json(self, instance):
         # TODO: Retrieve JSON formatted for GA optimizer
         pass
 
@@ -94,6 +94,56 @@ class Constraint(models.Model):
     in_equality = models.CharField(max_length=3, choices=RELATIONSHIP_CHOICES)
     rhs_constant = models.FloatField()
     penalty = models.FloatField(default=0)
+    created = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def equation(self):
+        if len(self.constraint_relationships.all()) == 0:
+            return
+
+        eq = ""
+        for relation in self.constraint_relationships.all():
+            item_id = relation.constraint_parameter.item_id
+            coeff = relation.coefficient
+            if len(eq) > 0 and coeff > 0:
+                eq += "+"
+            eq += str(coeff) + "*" + "[" + str(item_id) + "]"
+
+        return eq + self.format_in_equality + str(self.rhs_constant)
+    
+    @property
+    def equation_name(self):
+        if len(self.constraint_relationships.all()) == 0:
+            return
+
+        eq = ""
+        for relation in self.constraint_relationships.all():
+            item_id = relation.constraint_parameter.item_id
+            try:
+                item_name = Item.objects.get(item_id=item_id).name
+            except Item.DoesNotExist:
+                return  
+
+            coeff = relation.coefficient
+            if len(eq) > 0 and coeff > 0:
+                eq += "+"
+            eq += str(coeff) + "*" + "[" + str(item_name) + "]"
+
+        return eq + self.format_in_equality + str(self.rhs_constant)
+
+    @property
+    def format_in_equality(self):
+        check = self.in_equality
+        if check == "LT":
+            return "<"
+        elif check == "GT":
+            return ">"
+        elif check == "LEQ":
+            return "<="
+        elif check == "GEQ":
+            return ">="
+        elif check == "EQ":
+            return "="
 
     def __str__(self):
         return "Constraint: %s" % (self.name)
@@ -140,8 +190,11 @@ class Item(models.Model):
         related_name='items',
     )
     name = models.CharField(max_length=200)
-    item_id = models.IntegerField()
+    item_id = models.IntegerField(unique=True)
     cost = models.FloatField(blank=True)
+    price_current = models.FloatField()
+    price_floor = models.FloatField()
+    price_cap = models.FloatField()
 
 class TrainedPredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

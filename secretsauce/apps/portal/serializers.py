@@ -37,6 +37,45 @@ class ConstraintBlockSerializer(serializers.ModelSerializer):
         model = ConstraintBlock
         fields = '__all__'
 
+class ConstraintParameterRelationshipCreateSerializer(serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(required=True, queryset=ConstraintParameter.objects.all())
+    
+    class Meta:
+        model = ConstraintParameterRelationship
+        fields = ['id', 'coefficient']
+
+class ConstraintCreateSerializer(serializers.ModelSerializer):
+    constraint_relationships = ConstraintParameterRelationshipCreateSerializer(many=True)
+
+    class Meta:
+        model = Constraint
+        fields = ['constraint_block', 'constraint_relationships', 'name', 'in_equality', 'rhs_constant', 'penalty']
+
+    def create(self, validated_data):
+        instance = Constraint.objects.create(
+            constraint_block=validated_data['constraint_block'],
+            name=validated_data['name'],
+            in_equality=validated_data['in_equality'],
+            rhs_constant=validated_data['rhs_constant'],
+            penalty=validated_data['penalty'],
+        )
+        relationships = [ConstraintParameterRelationship(
+            constraint=instance,
+            constraint_parameter=data['id'],
+            coefficient=data['coefficient'],
+        ) for data in validated_data['constraint_relationships']]
+        ConstraintParameterRelationship.objects.bulk_create(relationships)
+        return instance
+
+
+class ConstraintDisplaySerializer(serializers.ModelSerializer):
+    equation = serializers.CharField(read_only=True)
+    equation_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Constraint
+        fields = ['id', 'name', 'created', 'penalty', 'equation', 'equation_name']
+
 class ProjectSerializer(serializers.ModelSerializer):
     data_blocks = serializers.PrimaryKeyRelatedField(many=True, required=False, read_only=True)
     constraint_blocks = serializers.PrimaryKeyRelatedField(many=True, required=False, read_only=True)
@@ -89,4 +128,4 @@ class TraindePredictionModelDisplaySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TrainedPredictionModel
-        exclude =[]
+        exclude = []
