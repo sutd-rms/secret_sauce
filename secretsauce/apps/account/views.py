@@ -54,7 +54,6 @@ class InviteUser(generics.CreateAPIView):
             'email': serializer.data.get('email'),
             'password':  serializer.data.get('password'),
             }
-            send_email('You have been invited to RMS Pricing Analytics Platform!', 'donotreply@rmsportal.com', [mappings['email']], '', 'create_user.html', mappings)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
 
 class EditProfile(APIView):

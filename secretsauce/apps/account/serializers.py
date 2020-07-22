@@ -8,11 +8,12 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CustomUserSerializer(serializers.ModelSerializer):
+    company = CompanySerializer()
     class Meta:
         model = User
-        exclude = ['password', 'is_superuser', 'user_permissions', 'groups']
+        exclude = ['password', 'user_permissions', 'groups']
 
 class EditProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone']
+        fields = ['first_name', 'last_name', 'phone', 'cover']
