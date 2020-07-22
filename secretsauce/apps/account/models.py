@@ -55,7 +55,7 @@ class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(_("email address"), unique=True)
     phone = models.CharField(null=True, max_length=255)
-    cover = models.ImageField(upload_to='cover_images/', null=True, blank=True)
+    cover = models.ImageField(upload_to='user_profile_images/', null=True, blank=True)
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
