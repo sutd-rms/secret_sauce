@@ -8,6 +8,7 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CustomUserSerializer(serializers.ModelSerializer):
+    company = CompanySerializer()
     class Meta:
         model = User
         exclude = ['password', 'user_permissions', 'groups']
