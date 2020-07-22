@@ -16,4 +16,4 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class EditProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone']
+        fields = ['first_name', 'last_name', 'phone', 'cover']
