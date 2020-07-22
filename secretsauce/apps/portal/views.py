@@ -380,3 +380,15 @@ class TrainModel(generics.ListCreateAPIView):
         if self.request.method == 'GET':
             return TraindePredictionModelDisplaySerializer
         return TrainedPredictionModelSerializer
+
+class ConstraintCategoryList(generics.ListCreateAPIView):
+
+    permission_classes = [AdminOrReadOnly]
+    queryset = ConstraintCategory.objects.all()
+    serializer_class = ConstraintCategorySerializer
+
+class ConstraintCategoryDetail(generics.RetrieveUpdateDestroyAPIView):
+
+    permission_classes = [AdminOrReadOnly]
+    queryset = ConstraintCategory.objects.all()
+    serializer_class = ConstraintCategorySerializer

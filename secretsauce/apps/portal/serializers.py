@@ -49,7 +49,7 @@ class ConstraintCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Constraint
-        fields = ['constraint_block', 'constraint_relationships', 'name', 'in_equality', 'rhs_constant', 'penalty']
+        fields = ['constraint_block', 'constraint_relationships', 'name', 'in_equality', 'rhs_constant', 'penalty', 'category']
 
     def create(self, validated_data):
         instance = Constraint.objects.create(
@@ -58,6 +58,7 @@ class ConstraintCreateSerializer(serializers.ModelSerializer):
             in_equality=validated_data['in_equality'],
             rhs_constant=validated_data['rhs_constant'],
             penalty=validated_data['penalty'],
+            category=validated_data['category'],
         )
         relationships = [ConstraintParameterRelationship(
             constraint=instance,
@@ -74,7 +75,7 @@ class ConstraintDisplaySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Constraint
-        fields = ['id', 'name', 'created', 'penalty', 'equation', 'equation_name']
+        fields = ['id', 'name', 'created', 'penalty', 'equation', 'equation_name', 'category']
 
 class ProjectSerializer(serializers.ModelSerializer):
     data_blocks = serializers.PrimaryKeyRelatedField(many=True, required=False, read_only=True)
@@ -129,3 +130,9 @@ class TraindePredictionModelDisplaySerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainedPredictionModel
         exclude = []
+
+class ConstraintCategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ConstraintCategory
+        fields = ['__all__']

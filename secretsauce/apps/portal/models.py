@@ -73,6 +73,9 @@ class ConstraintBlock(models.Model):
         # TODO: Retrieve JSON formatted for GA optimizer
         pass
 
+class ConstraintCategory(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+
 class Constraint(models.Model):
     """A single constraint"""
 
@@ -95,6 +98,11 @@ class Constraint(models.Model):
     rhs_constant = models.FloatField()
     penalty = models.FloatField(default=0)
     created = models.DateTimeField(auto_now_add=True)
+    category = models.ForeignKey(
+        ConstraintCategory,
+        on_delete=models.SET_NULL,
+        null=True
+    )
 
     @property
     def equation(self):
