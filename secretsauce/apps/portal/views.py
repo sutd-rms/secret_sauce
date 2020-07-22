@@ -226,7 +226,7 @@ class GetDataBlock(views.APIView):
     parser_classes = [MultiPartParser]
     max_query_size = 10
 
-    def get(self, request, pk, *args, **kwargs):
+    def post(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
 
         if 'query' not in request.data or 'items' not in request.data:

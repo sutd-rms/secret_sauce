@@ -10,7 +10,7 @@ class CompanySerializer(serializers.ModelSerializer):
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        exclude = ['password', 'is_superuser', 'user_permissions', 'groups']
+        exclude = ['password', 'user_permissions', 'groups']
 
 class EditProfileSerializer(serializers.ModelSerializer):
     class Meta:
