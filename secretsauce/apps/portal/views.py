@@ -37,9 +37,12 @@ class DataBlockList(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            item_ids = UploadVerifier(request.FILES['upload']).get_schema()
+            verifier = UploadVerifier(request.FILES['upload'])
+            item_ids = verifier.get_schema()
             self.perform_create(serializer, item_ids)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return_data = serializer.data
+            return_data['errors'] = verifier.errors
+            return Response(return_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer, item_ids):
@@ -127,18 +130,21 @@ class GetDataBlock(views.APIView):
     def obtain_quantities(self, file, items):
         df = pd.read_csv(file, encoding='utf-8')
         df = df[df['Item_ID'].isin(items)]
+
         output = defaultdict(list)
-        weeks = set()
+        max_week = 0
         for idx, row in df.iterrows():
             item_id = int(row['Item_ID'])
             week = int(row['Wk'])
-            weeks.add(week)
             qty = row['Qty_']
-            while len(output[item_id]) < week:
-                output[item_id].append(None)
-            output[item_id][week - 1] = qty
+
+            max_week = max(week, max_week)
+            while len(output[item_id]) < max_week:
+                output[item_id].append(0)
+
+            output[item_id][week - 1] += qty
         final_output = {
-            'weeks': sorted(list(weeks)),
+            'weeks': list(range(1, max_week + 1)),
             'datasets': output,
         }
         return final_output
