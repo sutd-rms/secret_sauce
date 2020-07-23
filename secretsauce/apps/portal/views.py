@@ -58,7 +58,7 @@ class DataBlockList(generics.ListCreateAPIView):
         if isinstance(queryset, QuerySet):
             # Ensure queryset is re-evaluated on each request.
             queryset = queryset.all()
-        project = self.request.data.get('project')
+        project = self.request.query_params.get('project')
         return queryset.filter(project=project)
         
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
@@ -78,11 +78,17 @@ class GetDataBlock(views.APIView):
     def get(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
 
-        if 'query' not in request.data or 'items' not in request.data:
-            raise ParseError(detail='Query and Items required', code='invalid_data')
+        if 'query' not in request.query_params:
+            raise ParseError(detail="'query' required in query_params", code='invalid_data')        
+        if 'items' not in request.query_params:
+            raise ParseError(detail="'items' required in query_params", code='invalid_data')
 
-        query = request.data.get('query')
-        items = request.data.getlist('items')
+        query = request.query_params.get('query')
+        items = request.query_params.get('items').split(',')
+        try:
+            items = list(map(int, items))
+        except ValueError as e:
+            raise ParseError(e)
 
         if len(items) > self.max_query_size:
             raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
@@ -351,7 +357,7 @@ class TrainModel(generics.ListCreateAPIView):
 
     def get_queryset(self):
         try:
-            project = Project.objects.get(id=self.request.data['project'])
+            project = Project.objects.get(id=self.request.query_params['project'])
         except KeyError:
             raise ParseError(detail="Please specify project")
         except Project.DoesNotExist:
@@ -370,10 +376,10 @@ class TrainModel(generics.ListCreateAPIView):
                     if json.loads(r.content).get('pct_complete') == 100:
                         tm.available = True
                         tm.save()
-                except requests.exceptions.ReadTimeout:
-                    pass
-                except requests.exceptions.ConnectionTimeout:
-                    pass
+                except requests.exceptions.ReadTimeout as e:
+                    raise ParseError(e)
+                except requests.exceptions.ConnectTimeout as e:
+                    raise ParseError(e)
         return trained_models 
 
     def get_serializer_class(self):
