@@ -73,20 +73,17 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSingleSerializer
 
-class GetDataBlock(views.APIView):
+class VizPrices(views.APIView):
 
     parser_classes = [MultiPartParser]
     max_query_size = 10
 
     def get(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
-
-        if 'query' not in request.query_params:
-            raise ParseError(detail="'query' required in query_params", code='invalid_data')        
+    
         if 'items' not in request.query_params:
             raise ParseError(detail="'items' required in query_params", code='invalid_data')
 
-        query = request.query_params.get('query')
         items = request.query_params.get('items').split(',')
         try:
             items = list(map(int, items))
@@ -96,12 +93,7 @@ class GetDataBlock(views.APIView):
         if len(items) > self.max_query_size:
             raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
 
-        if query == 'price':
-            body = self.obtain_prices(data_block.upload, items)
-        elif query == 'quantity':
-            body = self.obtain_quantities(data_block.upload, items)
-        else:
-            raise ParseError(detail="Query is not well specified, please specify 'price' or 'quantity' ", code='invalid_query')
+        body = self.obtain_prices(data_block.upload, items)
 
         return Response(body, status=status.HTTP_200_OK)
 
@@ -126,6 +118,36 @@ class GetDataBlock(views.APIView):
             'datasets': datasets
         }
         return final_output
+
+class VizQuantities(views.APIView):
+
+    parser_classes = [MultiPartParser]
+    max_query_size = 10
+
+    def get(self, request, pk, *args, **kwargs):
+        data_block = self.get_object(pk)
+     
+        if 'items' not in request.query_params:
+            raise ParseError(detail="'items' required in query_params", code='invalid_data')
+
+        items = request.query_params.get('items').split(',')
+        try:
+            items = list(map(int, items))
+        except ValueError as e:
+            raise ParseError(e)
+
+        if len(items) > self.max_query_size:
+            raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
+
+        body = self.obtain_quantities(data_block.upload, items)
+
+        return Response(body, status=status.HTTP_200_OK)
+
+    def get_object(self, pk):
+        try:
+            return DataBlock.objects.get(id=pk)
+        except DataBlock.DoesNotExist:
+            raise Http404
 
     def obtain_quantities(self, file, items):
         df = pd.read_csv(file, encoding='utf-8')
