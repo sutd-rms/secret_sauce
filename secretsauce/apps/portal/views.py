@@ -336,7 +336,7 @@ class TrainModel(generics.ListCreateAPIView):
             buf = pa.BufferOutputStream()
             pq.write_table(table, buf)
             files = {'data': buf.getvalue()}
-            payload = {'cv_acc': True, 'project_id': serializer.data['id']}
+            payload = {'cv_acc': True, 'project_id': serializer.data['id'], 'modeltype': 'default'}
             def r(url, data=None, files=None, timeout=None):
                 try:
                     resp = requests.post(FILLET+'/train/', data=payload, files=files, timeout=(3.05, 10))
