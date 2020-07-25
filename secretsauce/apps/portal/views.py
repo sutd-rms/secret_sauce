@@ -270,6 +270,10 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def get_queryset(self):
+        project = self.request.query_params.get('project')
+        return self.queryset.filter(project=project)
+
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return ConstraintBlockListDisplaySerializer
