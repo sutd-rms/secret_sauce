@@ -139,4 +139,4 @@ class ConstraintCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ConstraintCategory
-        fields = ['__all__']
+        fields = '__all__'
