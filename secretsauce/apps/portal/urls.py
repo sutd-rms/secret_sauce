@@ -26,6 +26,7 @@ urlpatterns = [
     path('constraintsets/', views.ConstraintBlockListCreate.as_view()),
     path('constraintsets/<uuid:pk>/parameters/', views.ConstraintBlockItems.as_view()),
     path('constraints/', views.ConstraintListAndCreate.as_view()),
+    path('constraints/<uuid:pk>', views.ConstraintDetail.as_view()),
 
     path('predictionmodels/', views.PredictionModelList.as_view(), name='prediction-model-list'),
     path('predictionmodels/<uuid:pk>', views.PredictionModelDetail.as_view(), name='prediction-model-detail'),

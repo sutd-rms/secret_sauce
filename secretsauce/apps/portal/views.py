@@ -333,6 +333,11 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
             return ConstraintDisplaySerializer
         return ConstraintCreateSerializer
 
+class ConstraintDetail(generics.RetrieveDestroyAPIView):
+
+    queryset = Constraint.objects.all()
+    serializer_class = ConstraintDisplaySerializer
+
 class PredictionModelList(generics.ListCreateAPIView):
 
     permission_classes = [AdminOrReadOnly]
