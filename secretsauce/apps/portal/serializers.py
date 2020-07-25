@@ -7,7 +7,7 @@ class DataBlockHeaderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DataBlockHeader
-        fields = ['item_id']
+        fields = ['item_id', 'item_name']
 
 class DataBlockListSerializer(serializers.ModelSerializer):
 

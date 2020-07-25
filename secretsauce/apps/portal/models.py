@@ -193,6 +193,12 @@ class DataBlockHeader(models.Model):
     class Meta:
         unique_together = ('data_block', 'item_id')
 
+    @property
+    def item_name(self):
+        if self.data_block.project.cost_sheet:
+            return self.data_block.project.items.all().get(item_id=self.item_id).name
+        return None
+
 class Item(models.Model):
     """Item obtained from Cost Sheet"""
     project = models.ForeignKey(
