@@ -74,6 +74,7 @@ class ConstraintBlock(models.Model):
         pass
 
 class ConstraintCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, unique=True)
 
 class Constraint(models.Model):
@@ -167,6 +168,15 @@ class ConstraintParameter(models.Model):
     )
     item_id = models.IntegerField()
 
+    @property
+    def item_name(self):
+        if self.constraint_block.project.cost_sheet:
+            try:
+                return self.constraint_block.project.items.all().get(item_id=self.item_id).name
+            except Item.DoesNotExist:
+                pass
+        return None
+
 class ConstraintParameterRelationship(models.Model):
     """Relationship connecting Constraint and ConstraintParameter"""
 
@@ -196,7 +206,10 @@ class DataBlockHeader(models.Model):
     @property
     def item_name(self):
         if self.data_block.project.cost_sheet:
-            return self.data_block.project.items.all().get(item_id=self.item_id).name
+            try:
+                return self.data_block.project.items.all().get(item_id=self.item_id).name
+            except Item.DoesNotExist:
+                return None
         return None
 
 class Item(models.Model):
@@ -229,6 +242,6 @@ class TrainedPredictionModel(models.Model):
         related_name='trained_models',
     )
     name = models.CharField(max_length=200)
-    available = models.BooleanField(default=False)
     created = models.DateTimeField(auto_now_add=True)
+    pct_complete = models.FloatField(default=0)
     
