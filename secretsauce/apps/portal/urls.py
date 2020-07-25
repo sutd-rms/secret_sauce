@@ -23,7 +23,7 @@ urlpatterns = [
     path('projects/<uuid:pk>', views.ProjectDetail.as_view(), name='project-detail'),
     path('projects/<uuid:pk>/items/', views.ProjectItems.as_view(), name='item-directory-list'),
 
-    path('constraintsets/', views.ConstraintBlockCreate.as_view()),
+    path('constraintsets/', views.ConstraintBlockListCreate.as_view()),
     path('constraintsets/<uuid:pk>/parameters/', views.ConstraintBlockItems.as_view()),
     path('constraints/', views.ConstraintListAndCreate.as_view()),
 

@@ -235,13 +235,12 @@ class ProjectItems(views.APIView):
         instance.cost_sheet = False
         instance.save()
 
-class ConstraintBlockCreate(generics.CreateAPIView):
+class ConstraintBlockListCreate(generics.ListCreateAPIView):
     """
     Create new ConstraintBlock from a specified DataBlock schema
     """
 
     queryset = ConstraintBlock.objects.all()
-    serializer_class = ConstraintBlockSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -270,6 +269,11 @@ class ConstraintBlockCreate(generics.CreateAPIView):
                     constraint_param['item_name'] = item_name
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return ConstraintBlockListDisplaySerializer
+        return ConstraintBlockCreateSerializer
 
 class ConstraintBlockItems(generics.ListAPIView):
     """

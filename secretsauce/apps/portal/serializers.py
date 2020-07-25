@@ -29,7 +29,13 @@ class ConstraintParameterSerializer(serializers.ModelSerializer):
         model = ConstraintParameter
         fields = ['id', 'item_id', 'item_name']
 
-class ConstraintBlockSerializer(serializers.ModelSerializer):
+class ConstraintBlockListDisplaySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ConstraintBlock
+        fields = ['id', 'name']
+
+class ConstraintBlockCreateSerializer(serializers.ModelSerializer):
     params = ConstraintParameterSerializer(many=True, read_only=True)
 
     class Meta:
