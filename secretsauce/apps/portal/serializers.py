@@ -23,7 +23,6 @@ class DataBlockSingleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ConstraintParameterSerializer(serializers.ModelSerializer):
-    item_name = serializers.CharField(max_length=200, required=False)
 
     class Meta:
         model = ConstraintParameter
@@ -140,4 +139,4 @@ class ConstraintCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ConstraintCategory
-        fields = ['__all__']
+        fields = '__all__'
