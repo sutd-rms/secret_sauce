@@ -190,6 +190,15 @@ class DataBlockHeader(models.Model):
     )
     item_id = models.IntegerField()
 
+    class Meta:
+        unique_together = ('data_block', 'item_id')
+
+    @property
+    def item_name(self):
+        if self.data_block.project.cost_sheet:
+            return self.data_block.project.items.all().get(item_id=self.item_id).name
+        return None
+
 class Item(models.Model):
     """Item obtained from Cost Sheet"""
     project = models.ForeignKey(
@@ -198,11 +207,14 @@ class Item(models.Model):
         related_name='items',
     )
     name = models.CharField(max_length=200)
-    item_id = models.IntegerField(unique=True)
+    item_id = models.IntegerField()
     cost = models.FloatField(blank=True)
     price_current = models.FloatField()
     price_floor = models.FloatField()
     price_cap = models.FloatField()
+
+    class Meta:
+        unique_together = ('project', 'item_id')
 
 class TrainedPredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
