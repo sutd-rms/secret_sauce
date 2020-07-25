@@ -250,23 +250,12 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
             except KeyError:
                 raise ParseError(detail="missing parameter: data_block")
             except DataBlock.DoesNotExist:
-                raise Http404
+                raise ParseError(detail="data_block: does not exist")
             self.perform_create(serializer)
             constraint_block = get_object_or_404(ConstraintBlock.objects.all(), id=serializer.data['id'])
             constraint_params = [ConstraintParameter(item_id=header.item_id, constraint_block=constraint_block) for header in data_block.schema.all()]
             ConstraintParameter.objects.bulk_create(constraint_params)
-            serializer = self.get_serializer(instance=self.get_queryset().get(id=serializer.data['id']))
-
-            project = constraint_block.project
-            if project.cost_sheet:
-                items = project.items.all()
-                for constraint_param in serializer.data['params']:
-                    try:
-                        item_id = constraint_param.get('item_id')
-                        item_name = items.get(item_id=item_id).name
-                    except Item.DoesNotExist:
-                        item_name = None
-                    constraint_param['item_name'] = item_name
+            serializer = self.get_serializer(instance=constraint_block)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -286,27 +275,6 @@ class ConstraintBlockItems(generics.ListAPIView):
     permission_classes = [IsOwnerOrAdmin]
     queryset = ConstraintParameter.objects.all()
     serializer_class = ConstraintParameterSerializer
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        project = ConstraintBlock.objects.get(id=self.kwargs.get('pk')).project
-        if project.cost_sheet:
-            items = project.items.all()
-            for constraint_param in serializer.data:
-                try:
-                    item_id = constraint_param.get('item_id')
-                    item_name = items.get(item_id=item_id).name
-                except Item.DoesNotExist:
-                    item_name = None
-                constraint_param['item_name'] = item_name
-        return Response(serializer.data)
 
     def get_queryset(self):
         cb = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
@@ -377,7 +345,8 @@ class TrainModel(generics.ListCreateAPIView):
             buf = pa.BufferOutputStream()
             pq.write_table(table, buf)
             files = {'data': buf.getvalue()}
-            payload = {'cv_acc': True, 'project_id': serializer.data['id'], 'modeltype': 'default'}
+            model_type = PredictionModel.objects.get(id=serializer.data['prediction_model']).name
+            payload = {'cv_acc': True, 'project_id': serializer.data['id'], 'modeltype': model_type}
             def r(url, data=None, files=None, timeout=None):
                 try:
                     resp = requests.post(FILLET+'/train/', data=payload, files=files, timeout=(3.05, 10))
@@ -406,21 +375,30 @@ class TrainModel(generics.ListCreateAPIView):
         
         data_blocks = project.data_blocks.all()
         trained_models = self.queryset.filter(data_block__in=data_blocks)
+        unavailable = dict()
         for tm in trained_models:
-            if not tm.available:
-                payload = json.dumps({'project_id': str(tm.id)})
-                headers = {'content-type': 'application/json',
-                        'Accept-Charset': 'UTF-8'
-                        }
-                try:
-                    r = requests.post(FILLET + '/query_progress/', data=payload, headers=headers, timeout=1)
-                    if json.loads(r.content).get('pct_complete') == 100:
-                        tm.available = True
-                        tm.save()
-                except requests.exceptions.ReadTimeout as e:
-                    raise ParseError(e)
-                except requests.exceptions.ConnectTimeout as e:
-                    raise ParseError(e)
+            if tm.pct_complete != 100:
+                unavailable[str(tm.id)] = tm
+
+        payload = json.dumps({
+            'project_id_ls': list(unavailable.keys())
+        })
+        headers = {
+            'content-type': 'application/json',
+            'Accept-Charset': 'UTF-8',
+        }
+        try:
+            r = requests.post(FILLET + '/batch_query_progress/', data=payload, headers=headers, timeout=3.05)
+            if r.status_code == 200:
+                for tm_id, data in json.loads(r.content).items():
+                    if not (data == 'project not found' or data == 'training not started'):
+                        unavailable[tm_id].pct_complete = data.get('pct_complete')
+                        unavailable[tm_id].save()
+        except requests.exceptions.ReadTimeout as e:
+            pass
+        except requests.exceptions.ConnectTimeout as e:
+            pass
+        
         return trained_models 
 
     def get_serializer_class(self):
