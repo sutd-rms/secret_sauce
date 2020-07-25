@@ -59,6 +59,7 @@ class UploadVerifier:
 
     def __init__(self, upload, encoding='utf-8'):
         """Raises UnreadableCSVFile if there are issues with reading the file"""
+        self.errors = dict()
         upload.seek(0)
         try:
             self.io_obj = io.StringIO(upload.read().decode(encoding))
@@ -83,14 +84,19 @@ class UploadVerifier:
         
     def check_type(self):
         """Raises WrongCellTypeCSVFile if there are issues related to the structure of the csv file"""
-        for row in self.csv_file:
+        for idx, row in enumerate(self.csv_file):
             # row is an OrderedDict of (header, value)
             for header in row:
                 value = row[header]
+                value.strip()
                 try:
                     float(value)
-                except:
-                    raise WrongCellTypeCSVFile()
+                except Exception as e:
+                    error_key = "Col: " + header + ", Row: " + str(idx+2)
+                    if value.isspace() or value == "":
+                        self.errors[error_key] = "Cell is empty"
+                    else:
+                        self.errors[error_key] = "Cell value not allowed: " + value
 
     def reset_seeker(self):
         self.io_obj.seek(0)

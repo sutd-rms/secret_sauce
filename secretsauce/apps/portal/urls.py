@@ -16,7 +16,8 @@ from secretsauce.apps.portal import views
 urlpatterns = [
     path('datablocks/', views.DataBlockList.as_view(), name='data-block-list'),
     path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view(), name='data-block-detail'),
-    path('datablocks/<uuid:pk>/vizdata/', views.GetDataBlock.as_view()),
+    path('datablocks/<uuid:pk>/vizdata/price/', views.VizPrices.as_view()),
+    path('datablocks/<uuid:pk>/vizdata/qty/', views.VizQuantities.as_view()),
 
     path('projects/', views.ProjectList.as_view(), name='project-list'),
     path('projects/<uuid:pk>', views.ProjectDetail.as_view(), name='project-detail'),
