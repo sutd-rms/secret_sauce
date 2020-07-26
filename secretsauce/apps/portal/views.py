@@ -247,6 +247,8 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
         if serializer.is_valid():
             try:
                 data_block = DataBlock.objects.get(id=self.request.data['data_block'])
+                if str(data_block.project.id) != request.data.get('project'):
+                    raise ParseError(detail='DataBlock should belong to Project')
             except KeyError:
                 raise ParseError(detail="missing parameter: data_block")
             except DataBlock.DoesNotExist:
@@ -267,6 +269,11 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
         if self.request.method == 'GET':
             return ConstraintBlockListDisplaySerializer
         return ConstraintBlockCreateSerializer
+
+class ConstraintBlockDetail(generics.RetrieveDestroyAPIView):
+
+    queryset = ConstraintBlock.objects.all()
+    serializer_class = ConstraintBlockDetailSerializer
 
 class ConstraintBlockItems(generics.ListAPIView):
     """
