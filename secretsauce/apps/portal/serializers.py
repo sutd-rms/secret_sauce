@@ -53,7 +53,7 @@ class ConstraintCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Constraint
-        fields = ['constraint_block', 'constraint_relationships', 'name', 'in_equality', 'rhs_constant', 'penalty', 'category']
+        fields = ['id', 'constraint_block', 'constraint_relationships', 'name', 'in_equality', 'rhs_constant', 'penalty', 'category']
 
     def create(self, validated_data):
         if 'category' in validated_data:

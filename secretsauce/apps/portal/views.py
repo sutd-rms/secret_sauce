@@ -296,6 +296,32 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             self.perform_create(serializer)
+            constraint_block = ConstraintBlock.objects.get(id=serializer.data.get('constraint_block'))
+            constraint_list = constraint_block.get_list()
+            price_bounds = constraint_block.project.get_price_bounds()
+            payload = json.dumps({
+                'constraints': [constraint_list, price_bounds]
+            })
+            headers = {
+                'content-type': 'application/json',
+                'Accept-Charset': 'UTF-8'
+            }
+            try:
+                r = requests.post(FILLET + '/detect_conflict/', data=payload, headers=headers)
+                if r.status_code == 200:
+                    if json.loads(r.content)['conflict'] == 'Conflict exists':
+                        serializer.instance.delete()
+                        return Response(data='Conflict exists', status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    serializer.instance.delete()
+                    raise ParseError(detail='Could not reach constraint conflict checker')
+            except requests.exceptions.ReadTimeout as e:
+                serializer.instance.delete()
+                raise ParseError(detail='Could not reach constraint conflict checker')
+            except requests.exceptions.ConnectTimeout as e:
+                serializer.instance.delete()
+                raise ParseError(detail='Could not reach constraint conflict checker')
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
