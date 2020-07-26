@@ -173,7 +173,7 @@ class Constraint(models.Model):
         for relation in self.constraint_relationships.all():
             item_id = relation.constraint_parameter.item_id
             try:
-                item_name = Item.objects.get(project=self.constraint_block.project, item_id=item_id).name
+                item_name = self.constraint_block.project.items.all().get(item_id=item_id).name
             except Item.DoesNotExist:
                 return  
 
