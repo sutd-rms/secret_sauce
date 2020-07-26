@@ -56,14 +56,23 @@ class ConstraintCreateSerializer(serializers.ModelSerializer):
         fields = ['constraint_block', 'constraint_relationships', 'name', 'in_equality', 'rhs_constant', 'penalty', 'category']
 
     def create(self, validated_data):
-        instance = Constraint.objects.create(
-            constraint_block=validated_data['constraint_block'],
-            name=validated_data['name'],
-            in_equality=validated_data['in_equality'],
-            rhs_constant=validated_data['rhs_constant'],
-            penalty=validated_data['penalty'],
-            category=validated_data['category'],
-        )
+        if 'category' in validated_data:
+            instance = Constraint.objects.create(
+                constraint_block=validated_data['constraint_block'],
+                name=validated_data['name'],
+                in_equality=validated_data['in_equality'],
+                rhs_constant=validated_data['rhs_constant'],
+                penalty=validated_data['penalty'],
+                category=validated_data['category'],
+            )
+        else:
+            instance = Constraint.objects.create(
+                constraint_block=validated_data['constraint_block'],
+                name=validated_data['name'],
+                in_equality=validated_data['in_equality'],
+                rhs_constant=validated_data['rhs_constant'],
+                penalty=validated_data['penalty'],
+            )
         relationships = [ConstraintParameterRelationship(
             constraint=instance,
             constraint_parameter=data['id'],
@@ -72,7 +81,6 @@ class ConstraintCreateSerializer(serializers.ModelSerializer):
         ConstraintParameterRelationship.objects.bulk_create(relationships)
         return instance
 
-
 class ConstraintDisplaySerializer(serializers.ModelSerializer):
     equation = serializers.CharField(read_only=True)
     equation_name = serializers.CharField(read_only=True)
@@ -80,6 +88,13 @@ class ConstraintDisplaySerializer(serializers.ModelSerializer):
     class Meta:
         model = Constraint
         fields = ['id', 'name', 'created', 'penalty', 'equation', 'equation_name', 'category']
+
+class ConstraintBlockDetailSerializer(serializers.ModelSerializer):
+    constraints = ConstraintDisplaySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ConstraintBlock
+        fields = '__all__'
 
 class ProjectSerializer(serializers.ModelSerializer):
     data_blocks = serializers.PrimaryKeyRelatedField(many=True, required=False, read_only=True)

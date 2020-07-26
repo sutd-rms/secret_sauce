@@ -268,6 +268,11 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
             return ConstraintBlockListDisplaySerializer
         return ConstraintBlockCreateSerializer
 
+class ConstraintBlockDetail(generics.RetrieveDestroyAPIView):
+
+    queryset = ConstraintBlock.objects.all()
+    serializer_class = ConstraintBlockDetailSerializer
+
 class ConstraintBlockItems(generics.ListAPIView):
     """
     Retrieve ConstraintParameters associated to a ConstraintBlock

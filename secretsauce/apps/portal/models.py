@@ -7,7 +7,7 @@ import uuid
 
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    title = models.CharField("Project Title", max_length=200, unique=True)
+    title = models.CharField("Project Title", max_length=200)
     description = models.TextField("Project Description", blank=True)
     cover = models.ImageField(upload_to='cover_images/', blank=True)
     company = models.ForeignKey(
@@ -20,12 +20,27 @@ class Project(models.Model):
     )
     cost_sheet = models.BooleanField(default=False)
 
+    class Meta:
+        unique_together = ('title', 'company')
+
     def __str__(self):
         return "%s: %s" % (self.company, self.title)
 
+    def get_price_bounds(self):
+        price_bounds = list()
+        if len(self.items.all()) == 0:
+            return price_bounds
+        for item in self.items.all():
+            entry = dict()
+            entry['item_id'] = item.item_id
+            entry['min'] = item.price_floor
+            entry['max'] = item.price_cap
+            price_bounds.append(entry)
+        return price_bounds
+
 class PredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     description = models.TextField("Model Description", blank=True)
 
     def __str__(self):
@@ -49,14 +64,24 @@ class DataBlock(models.Model):
         on_delete=models.CASCADE, 
         related_name='data_blocks'
     )
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200)
     upload = models.FileField(upload_to=obfuscate_upload_link)
+
+    class Meta:
+        unique_together = ('project', 'name')
 
     def __str__(self):
         return "DataBlock: %s" % (self.name) 
 
 class ConstraintBlock(models.Model):
     """A set of constraints"""
+    EQUALITY_CODES = {
+        'EQ': 0,
+        'LT': 1,
+        'GT': 2,
+        'LEQ': 3,
+        'GEQ': 4,
+    }
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(
@@ -64,14 +89,30 @@ class ConstraintBlock(models.Model):
         on_delete=models.CASCADE,
         related_name='constraint_blocks',
     )
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200)
+
+    class Meta:
+        unique_together = ('project', 'name')
 
     def __str__(self):
         return "ConstraintBlock: %s" % (self.name)
 
-    def get_formatted_json(self, instance):
-        # TODO: Retrieve JSON formatted for GA optimizer
-        pass
+    def get_list(self):
+        constraint_list = list()
+        if len(self.constraints.all()) == 0:
+            return constraint_list
+        for constraint in self.constraints.all():
+            entry = dict()
+            entry['products'] = list()
+            entry['scales'] = list()
+            for relationship in constraint.constraint_relationships.all():
+                entry['products'].append(relationship.constraint_parameter.item_id)
+                entry['scales'].append(relationship.coefficient)
+            entry['penalty'] = constraint.penalty
+            entry['equality'] = self.EQUALITY_CODES[constraint.in_equality]
+            entry['shift'] = constraint.rhs_constant
+            constraint_list.append(entry)
+        return constraint_list
 
 class ConstraintCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -83,8 +124,8 @@ class Constraint(models.Model):
     RELATIONSHIP_CHOICES = [
         ("LT", "Strictly less than"), # 1
         ("GT", "Strictly greater than"), # 2
-        ("LEQ", "Less than or equal to"),
-        ("GEQ", "Greater than or equal to"),
+        ("LEQ", "Less than or equal to"), # 3
+        ("GEQ", "Greater than or equal to"), # 4
         ("EQ", "Equal to"), # 0
     ]
 
@@ -94,7 +135,7 @@ class Constraint(models.Model):
         on_delete=models.CASCADE, 
         related_name='constraints',
     )
-    name = models.CharField(max_length=500, unique=True)
+    name = models.CharField(max_length=500)
     in_equality = models.CharField(max_length=3, choices=RELATIONSHIP_CHOICES)
     rhs_constant = models.FloatField()
     penalty = models.FloatField(default=0)
@@ -104,6 +145,9 @@ class Constraint(models.Model):
         on_delete=models.SET_NULL,
         null=True
     )
+
+    class Meta:
+        unique_together = ('constraint_block', 'name')
 
     @property
     def equation(self):
