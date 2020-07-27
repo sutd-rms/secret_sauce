@@ -446,7 +446,7 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True, authentication_classes=[], permission_classes=[])
     def feature_importance(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
-        if trainedmodel.feature_importance:
+        if not trainedmodel.feature_importance:
             try:
                 payload = json.dumps({
                     'project_id': str(trainedmodel.id)
