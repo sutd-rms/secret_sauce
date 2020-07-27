@@ -144,3 +144,7 @@ class CostSheetVerifier(UploadVerifier):
 def obfuscate_upload_link(instance, filename):
     secret = token_urlsafe(16)
     return '/'.join(['uploads', secret, filename])
+
+def obfuscate_results_link(instance, filename):
+    secret = token_urlsafe(16)
+    return '/'.join(['results', secret, filename])

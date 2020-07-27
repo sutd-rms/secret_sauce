@@ -1,12 +1,13 @@
 from rest_framework import generics, status, permissions, mixins, views, viewsets
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import permission_classes, action
 from rest_framework.exceptions import ParseError, ValidationError
 
 from django.db.models.query import QuerySet
-from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404
+from django.http import FileResponse, Http404, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect
+from django.core.files.base import ContentFile
 
 from secretsauce.apps.portal.models import *
 from secretsauce.apps.portal.serializers import *
@@ -73,12 +74,13 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSingleSerializer
 
-class VizPrices(views.APIView):
+class VizDataBlock(viewsets.ViewSet):
 
     parser_classes = [MultiPartParser]
     max_query_size = 10
 
-    def get(self, request, pk, *args, **kwargs):
+    @action(methods=['get'], detail=True, url_path='vizdata/price', url_name='viz-price')
+    def price(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
     
         if 'items' not in request.query_params:
@@ -94,6 +96,26 @@ class VizPrices(views.APIView):
             raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
 
         body = self.obtain_prices(data_block.upload, items)
+
+        return Response(body, status=status.HTTP_200_OK)
+
+    @action(methods=['get'], detail=True, url_path='vizdata/qty', url_name='viz-qty')
+    def qty(self, request, pk, *args, **kwargs):
+        data_block = self.get_object(pk)
+     
+        if 'items' not in request.query_params:
+            raise ParseError(detail="'items' required in query_params", code='invalid_data')
+
+        items = request.query_params.get('items').split(',')
+        try:
+            items = list(map(int, items))
+        except ValueError as e:
+            raise ParseError(e)
+
+        if len(items) > self.max_query_size:
+            raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
+
+        body = self.obtain_quantities(data_block.upload, items)
 
         return Response(body, status=status.HTTP_200_OK)
 
@@ -118,36 +140,6 @@ class VizPrices(views.APIView):
             'datasets': datasets
         }
         return final_output
-
-class VizQuantities(views.APIView):
-
-    parser_classes = [MultiPartParser]
-    max_query_size = 10
-
-    def get(self, request, pk, *args, **kwargs):
-        data_block = self.get_object(pk)
-     
-        if 'items' not in request.query_params:
-            raise ParseError(detail="'items' required in query_params", code='invalid_data')
-
-        items = request.query_params.get('items').split(',')
-        try:
-            items = list(map(int, items))
-        except ValueError as e:
-            raise ParseError(e)
-
-        if len(items) > self.max_query_size:
-            raise ParseError(detail=f'Query is too large, maximum of {self.max_query_size} items only', code='query_size_exceeded')
-
-        body = self.obtain_quantities(data_block.upload, items)
-
-        return Response(body, status=status.HTTP_200_OK)
-
-    def get_object(self, pk):
-        try:
-            return DataBlock.objects.get(id=pk)
-        except DataBlock.DoesNotExist:
-            raise Http404
 
     def obtain_quantities(self, file, items):
         df = pd.read_csv(file, encoding='utf-8')
@@ -427,6 +419,8 @@ class TrainModel(generics.ListCreateAPIView):
                     if not (data == 'project not found' or data == 'training not started'):
                         unavailable[tm_id].pct_complete = data.get('pct_complete')
                         unavailable[tm_id].save()
+                    else:
+                        print(data)
         except requests.exceptions.ReadTimeout as e:
             pass
         except requests.exceptions.ConnectTimeout as e:
@@ -438,6 +432,59 @@ class TrainModel(generics.ListCreateAPIView):
         if self.request.method == 'GET':
             return TraindePredictionModelDisplaySerializer
         return TrainedPredictionModelSerializer
+
+class TrainedModelDetail(generics.RetrieveDestroyAPIView):
+    
+    queryset = TrainedPredictionModel.objects.all()
+    serializer_class = TraindePredictionModelDisplaySerializer
+
+class TrainedModelInfo(viewsets.ViewSet):
+    
+    queryset = TrainedPredictionModel.objects.all()
+    serializer_class = TraindePredictionModelDisplaySerializer
+    
+    @action(methods=['get'], detail=True, authentication_classes=[], permission_classes=[])
+    def feature_importance(self, request, pk):
+        trainedmodel = get_object_or_404(self.queryset, id=pk)
+        if trainedmodel.pct_complete != 100:
+            raise ParseError(detail='Model has not finished training yet.')
+        if not trainedmodel.feature_importance:
+            try:
+                payload = json.dumps({
+                    'project_id': str(trainedmodel.id)
+                })
+                headers = {
+                    'content-type': 'application/json',
+                    'Accept-Charset': 'UTF-8'
+                }
+                r = requests.post(FILLET + '/get_feature_importances/', data=payload, headers=headers, timeout=3.05)
+                if r.status_code == 200:
+                    records = []
+                    for model_id, obj in r.json().items():
+                        feature_names = obj['feature_name']
+                        importances = obj['importance']
+                        for idx in feature_names:
+                            record = dict()
+                            record['model'] = model_id
+                            record['feature_name'] = feature_names[idx]
+                            record['importance'] = importances[idx]
+                            records.append(record)
+                    df = pd.read_json(json.dumps(records), orient='records')
+                    file_name = f'{trainedmodel.name}_feature_importance.csv'
+                    csv_file = ContentFile(df.to_csv(line_terminator='\n', index=False))
+                    trainedmodel.feature_importance.save(file_name, csv_file)
+            except Exception as e:
+                print(e)
+                raise ParseError(e)
+        return HttpResponseRedirect(redirect_to=trainedmodel.feature_importance.url, content_type="application/csv")
+
+    @action(methods=['get'], detail=True)
+    def elasticities(self, request, pk):
+        pass
+
+    @action(methods=['get'], detail=True)
+    def cv_score(self, request, pk):
+        pass
 
 class ConstraintCategoryList(generics.ListCreateAPIView):
 

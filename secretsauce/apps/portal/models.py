@@ -1,7 +1,7 @@
 from django.db import models
 
 from secretsauce.apps.account.models import User, Company
-from secretsauce.utils import obfuscate_upload_link
+from secretsauce.utils import obfuscate_upload_link, obfuscate_results_link
 
 import uuid
 
@@ -24,7 +24,7 @@ class Project(models.Model):
         unique_together = ('title', 'company')
 
     def __str__(self):
-        return "%s: %s" % (self.company, self.title)
+        return f'Project: {self.title} ({self.company})'
 
     def get_price_bounds(self):
         price_bounds = list()
@@ -71,7 +71,7 @@ class DataBlock(models.Model):
         unique_together = ('project', 'name')
 
     def __str__(self):
-        return "DataBlock: %s" % (self.name) 
+        return f'DataBlock: {self.name}' 
 
 class ConstraintBlock(models.Model):
     """A set of constraints"""
@@ -95,7 +95,7 @@ class ConstraintBlock(models.Model):
         unique_together = ('project', 'name')
 
     def __str__(self):
-        return "ConstraintBlock: %s" % (self.name)
+        return f'ConstraintBlock: {self.name}'
 
     def get_list(self):
         constraint_list = list()
@@ -117,6 +117,9 @@ class ConstraintBlock(models.Model):
 class ConstraintCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, unique=True)
+
+    def __str__(self):
+        return f'ConstraintCategory: {self.name}'
 
 class Constraint(models.Model):
     """A single constraint"""
@@ -164,7 +167,7 @@ class Constraint(models.Model):
 
         return eq + self.format_in_equality + str(self.rhs_constant)
     
-    @property
+    @property 
     def equation_name(self):
         if len(self.constraint_relationships.all()) == 0:
             return
@@ -199,7 +202,7 @@ class Constraint(models.Model):
             return "="
 
     def __str__(self):
-        return "Constraint: %s" % (self.name)
+        return f'Constraint: {self.name}'
 
 class ConstraintParameter(models.Model):
     """A parameter in a constraint"""
@@ -220,6 +223,9 @@ class ConstraintParameter(models.Model):
             except Item.DoesNotExist:
                 pass
         return None
+    
+    def __str__(self):
+        return f'ConstraintParameter: {self.item_id} ({constraint_block.name})'
 
 class ConstraintParameterRelationship(models.Model):
     """Relationship connecting Constraint and ConstraintParameter"""
@@ -288,4 +294,7 @@ class TrainedPredictionModel(models.Model):
     name = models.CharField(max_length=200)
     created = models.DateTimeField(auto_now_add=True)
     pct_complete = models.FloatField(default=0)
-    
+    feature_importance = models.FileField(upload_to=obfuscate_results_link, blank=True)
+
+    def __str__(self):
+        return f'TrainedPredictionModel: {name}'    
