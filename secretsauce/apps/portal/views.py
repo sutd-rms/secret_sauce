@@ -443,7 +443,7 @@ class TrainedModelInfo(viewsets.ViewSet):
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TraindePredictionModelDisplaySerializer
     
-    @action(methods=['get'], detail=True, authentication_classes=[], permission_classes=[])
+    @action(methods=['get'], detail=True)
     def feature_importance(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
         if trainedmodel.pct_complete != 100:
@@ -485,6 +485,36 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True)
     def cv_score(self, request, pk):
         pass
+
+    @action(methods=['post'], detail=True, parser_classes=[JSONParser])
+    def whatif(self, request, pk):
+        trainedmodel = get_object_or_404(self.queryset, id=pk)
+        if trainedmodel.pct_complete != 100:
+            raise ParseError(detail='Model has not finished training yet.')
+        prices = request.data['prices']
+        items = trainedmodel.data_block.schema.all()
+        errors = dict()
+        for item in trainedmodel.data_block.schema.all():
+            if str(item.item_id) not in prices:
+                errors[item.item_id] = "provide price"
+            else:
+                prices[str(item.item_id)] = float(prices[str(item.item_id)])
+        if len(errors) > 0:
+            raise ParseError(detail=errors)
+        try:
+            payload = json.dumps({
+                'prices': prices,
+                'project_id': str(trainedmodel.id)
+            })
+            headers = {
+                'content-type': 'application/json',
+                'Accept-Charset': 'UTF-8'
+            }
+            r = requests.post(FILLET + '/predict/', data=payload, headers=headers, timeout=10.5)
+            return Response(r.json()['qty_estimates'])
+        except Exception as e:
+            print(e)
+            raise ParseError(e)
 
 class ConstraintCategoryList(generics.ListCreateAPIView):
 
