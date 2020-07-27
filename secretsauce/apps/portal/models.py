@@ -272,7 +272,6 @@ class Item(models.Model):
     name = models.CharField(max_length=200)
     item_id = models.IntegerField()
     cost = models.FloatField(blank=True)
-    price_current = models.FloatField()
     price_floor = models.FloatField()
     price_cap = models.FloatField()
 

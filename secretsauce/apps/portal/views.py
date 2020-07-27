@@ -208,9 +208,8 @@ class ProjectItems(views.APIView):
                           name=name, 
                           item_id=item_id, 
                           cost=cost, 
-                          price_current=current, 
                           price_floor=floor, 
-                          price_cap=cap) for item_id, (name, cost, current, floor, cap) in items.items()]
+                          price_cap=cap) for item_id, (name, cost, floor, cap) in items.items()]
         Item.objects.bulk_create(item_objs)
         project.cost_sheet = True
         project.save()
