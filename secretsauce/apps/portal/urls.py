@@ -1,4 +1,5 @@
 from django.urls import path, include
+from rest_framework import routers
 from secretsauce.apps.portal import views
 
 # /users/ create user
@@ -13,11 +14,13 @@ from secretsauce.apps.portal import views
 # /users/reset_password_confirm/ finish reset password process
 # all endpoints available please view: https://djoser.readthedocs.io/en/latest/base_endpoints.html
 
+router = routers.SimpleRouter()
+router.register(r'datablocks', views.VizDataBlock, basename='datablocks')
+router.register(r'trainedmodels', views.TrainedModelInfo, basename='trainedmodels')
+
 urlpatterns = [
     path('datablocks/', views.DataBlockList.as_view(), name='data-block-list'),
     path('datablocks/<uuid:pk>', views.DataBlockDetail.as_view(), name='data-block-detail'),
-    path('datablocks/<uuid:pk>/vizdata/price/', views.VizPrices.as_view()),
-    path('datablocks/<uuid:pk>/vizdata/qty/', views.VizQuantities.as_view()),
 
     path('projects/', views.ProjectList.as_view(), name='project-list'),
     path('projects/<uuid:pk>', views.ProjectDetail.as_view(), name='project-detail'),
@@ -37,4 +40,5 @@ urlpatterns = [
     path('modeltags/<int:pk>', views.ModelTagDetail.as_view(), name='model-tag-detail'),
 
     path('trainedmodels/', views.TrainModel.as_view()), 
-]
+    path('trainedmodels/<uuid:pk>', views.TrainedModelDetail.as_view()),
+] + router.urls

@@ -142,7 +142,6 @@ class DataBlockDisplaySerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class TraindePredictionModelDisplaySerializer(serializers.ModelSerializer):
-
     prediction_model = PredictionModelDisplaySerializer(required=True, many=False)
     data_block = DataBlockDisplaySerializer(required=True, many=False)
 
