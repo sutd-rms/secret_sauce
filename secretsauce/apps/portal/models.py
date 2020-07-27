@@ -295,6 +295,8 @@ class TrainedPredictionModel(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     pct_complete = models.FloatField(default=0)
     feature_importance = models.FileField(upload_to=obfuscate_results_link, blank=True)
+    cv_progress = models.FloatField(default=0)
+    cv_score = models.FileField(upload_to=obfuscate_results_link, blank=True)
 
     def __str__(self):
         return f'TrainedPredictionModel: {name}'    

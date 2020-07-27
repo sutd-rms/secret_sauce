@@ -402,7 +402,7 @@ class TrainModel(generics.ListCreateAPIView):
         trained_models = self.queryset.filter(data_block__in=data_blocks)
         unavailable = dict()
         for tm in trained_models:
-            if tm.pct_complete != 100:
+            if tm.pct_complete != 100 or tm.cv_progress != 100:
                 unavailable[str(tm.id)] = tm
 
         payload = json.dumps({
@@ -418,6 +418,7 @@ class TrainModel(generics.ListCreateAPIView):
                 for tm_id, data in json.loads(r.content).items():
                     if not (data == 'project not found' or data == 'training not started'):
                         unavailable[tm_id].pct_complete = data.get('pct_complete')
+                        unavailable[tm_id].cv_progress = data.get('cv_progress')
                         unavailable[tm_id].save()
                     else:
                         print(data)
@@ -484,7 +485,31 @@ class TrainedModelInfo(viewsets.ViewSet):
 
     @action(methods=['get'], detail=True)
     def cv_score(self, request, pk):
-        pass
+        trainedmodel = get_object_or_404(self.queryset, id=pk)
+        if trainedmodel.pct_complete != 100:
+            raise ParseError(detail='Model has not finished training yet.')
+        if trainedmodel.cv_progress != 100:
+            raise ParseError(detail='Cross-validation has not been completed.')
+        if not trainedmodel.cv_score:
+            try:
+                payload = json.dumps({
+                    'project_id': str(trainedmodel.id)
+                })
+                headers = {
+                    'content-type': 'application/json',
+                    'Accept-Charset': 'UTF-8'
+                }
+                r = requests.post(FILLET + '/get_cv_results/', data=payload, headers=headers, timeout=3.05)
+                if r.status_code == 200:
+                    json_file = json.dumps(json.loads(r.json()))
+                    df = pd.read_json(json_file, orient='columns')
+                    file_name = f'{trainedmodel.name}_cv_score.csv'
+                    csv_file = ContentFile(df.to_csv(line_terminator='\n', index=False))
+                    trainedmodel.cv_score.save(file_name, csv_file)
+            except Exception as e:
+                print(e)
+                raise ParseError(e)
+        return HttpResponseRedirect(redirect_to=trainedmodel.cv_score.url, content_type="application/csv")
 
     @action(methods=['post'], detail=True, parser_classes=[JSONParser])
     def whatif(self, request, pk):
