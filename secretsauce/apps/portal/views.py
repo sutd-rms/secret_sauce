@@ -446,6 +446,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True, authentication_classes=[], permission_classes=[])
     def feature_importance(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        if trainedmodel.pct_complete != 100:
+            raise ParseError(detail='Model has not finished training yet.')
         if not trainedmodel.feature_importance:
             try:
                 payload = json.dumps({
@@ -473,6 +475,7 @@ class TrainedModelInfo(viewsets.ViewSet):
                     trainedmodel.feature_importance.save(file_name, csv_file)
             except Exception as e:
                 print(e)
+                raise ParseError(e)
         return HttpResponseRedirect(redirect_to=trainedmodel.feature_importance.url, content_type="application/csv")
 
     @action(methods=['get'], detail=True)
