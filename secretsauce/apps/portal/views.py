@@ -564,7 +564,10 @@ class TrainedModelInfo(viewsets.ViewSet):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
-        prices = request.data['prices']
+        try:
+            prices = request.data['prices']
+        except KeyError as e:
+            raise ParseError(e)
         items = trainedmodel.data_block.schema.all()
         errors = dict()
         for item in trainedmodel.data_block.schema.all():
@@ -584,7 +587,8 @@ class TrainedModelInfo(viewsets.ViewSet):
                 'Accept-Charset': 'UTF-8'
             }
             r = requests.post(FILLET + '/predict/', data=payload, headers=headers, timeout=10.5)
-            return Response(r.json()['qty_estimates'])
+            df = pd.DataFrame.from_dict(r.json()['qty_estimates'], orient='index', columns=['qty'])
+            return FileResponse(df.to_csv(line_terminator='\n', index=False), content_type='application/csv', as_attachment=True, filename=f'{trainedmodel.name}_whatif.csv')
         except Exception as e:
             print(e)
             raise ParseError(e)
