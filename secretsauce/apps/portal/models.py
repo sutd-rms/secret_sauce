@@ -293,10 +293,17 @@ class TrainedPredictionModel(models.Model):
     )
     name = models.CharField(max_length=200)
     created = models.DateTimeField(auto_now_add=True)
+
     pct_complete = models.FloatField(default=0)
-    feature_importance = models.FileField(upload_to=obfuscate_results_link, blank=True)
+    
     cv_progress = models.FloatField(default=0)
     cv_score = models.FileField(upload_to=obfuscate_results_link, blank=True)
+
+    fi_done = models.BooleanField(default=False)
+    feature_importance = models.FileField(upload_to=obfuscate_results_link, blank=True)
+
+    ee_done = models.BooleanField(default=False)
+    elasticity = models.FileField(upload_to=obfuscate_results_link, blank=True)
 
     def __str__(self):
         return f'TrainedPredictionModel: {name}'
