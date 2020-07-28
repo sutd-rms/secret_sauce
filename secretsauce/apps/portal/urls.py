@@ -16,6 +16,7 @@ from secretsauce.apps.portal import views
 
 router = routers.SimpleRouter()
 router.register(r'datablocks', views.VizDataBlock, basename='datablocks')
+router.register(r'datablocks', views.DataBlockPrice, basename='datablocks')
 router.register(r'trainedmodels', views.TrainedModelInfo, basename='trainedmodels')
 
 urlpatterns = [

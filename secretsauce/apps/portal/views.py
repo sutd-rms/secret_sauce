@@ -74,6 +74,16 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockSingleSerializer
 
+class DataBlockPrice(viewsets.ViewSet):
+
+    @action(methods=['get'], detail=True)
+    def average_prices(self, request, pk):
+        data_block = get_object_or_404(DataBlock.objects.all(), id=pk)
+        df = pd.read_csv(data_block.upload).drop(['Wk', 'Tier', 'Groups', 'Store', 'Qty_'], axis=1)
+        df = df.groupby(['Item_ID']).mean()
+        output = df.to_dict()['Price_']
+        return Response(output)
+
 class VizDataBlock(viewsets.ViewSet):
 
     parser_classes = [MultiPartParser]
