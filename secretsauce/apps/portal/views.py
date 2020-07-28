@@ -208,9 +208,8 @@ class ProjectItems(views.APIView):
                           name=name, 
                           item_id=item_id, 
                           cost=cost, 
-                          price_current=current, 
                           price_floor=floor, 
-                          price_cap=cap) for item_id, (name, cost, current, floor, cap) in items.items()]
+                          price_cap=cap) for item_id, (name, cost, floor, cap) in items.items()]
         Item.objects.bulk_create(item_objs)
         project.cost_sheet = True
         project.save()
@@ -402,7 +401,7 @@ class TrainModel(generics.ListCreateAPIView):
         trained_models = self.queryset.filter(data_block__in=data_blocks)
         unavailable = dict()
         for tm in trained_models:
-            if tm.pct_complete != 100 or tm.cv_progress != 100:
+            if tm.pct_complete != 100 or tm.cv_progress != 100 or tm.fi_done == False or tm.ee_done == False:
                 unavailable[str(tm.id)] = tm
 
         payload = json.dumps({
@@ -419,6 +418,8 @@ class TrainModel(generics.ListCreateAPIView):
                     if not (data == 'project not found' or data == 'training not started'):
                         unavailable[tm_id].pct_complete = data.get('pct_complete')
                         unavailable[tm_id].cv_progress = data.get('cv_progress')
+                        unavailable[tm_id].fi_done = data.get('fi_done')
+                        unavailable[tm_id].ee_done = data.get('ee_done')
                         unavailable[tm_id].save()
                     else:
                         print(data)
@@ -449,6 +450,8 @@ class TrainedModelInfo(viewsets.ViewSet):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
+        if trainedmodel.fi_done == False:
+            raise ParseError(detail='Feature Importance has not been calculated yet.')
         if not trainedmodel.feature_importance:
             try:
                 payload = json.dumps({
@@ -480,8 +483,43 @@ class TrainedModelInfo(viewsets.ViewSet):
         return HttpResponseRedirect(redirect_to=trainedmodel.feature_importance.url, content_type="application/csv")
 
     @action(methods=['get'], detail=True)
-    def elasticities(self, request, pk):
-        pass
+    def elasticity(self, request, pk):
+        trainedmodel = get_object_or_404(self.queryset, id=pk)
+        if trainedmodel.pct_complete != 100:
+            raise ParseError(detail='Model has not finished training yet.')
+        if trainedmodel.ee_done == False:
+            raise ParseError(detail='Elasticity estimates have not been calculated yet.')
+        if not trainedmodel.elasticity:
+            try:
+                payload = json.dumps({
+                    'project_id': str(trainedmodel.id)
+                })
+                headers = {
+                    'content-type': 'application/json',
+                    'Accept-Charset': 'UTF-8'
+                }
+                r = requests.post(FILLET + '/get_elasticity_estimates/', data=payload, headers=headers, timeout=3.05)
+                if r.status_code == 200:
+                    if 'error' in r.json():
+                        raise ParseError(detail=r.json()['error'])
+                    records = dict()
+                    for price_change_item, ds in r.json().items():
+                        for change_type, qty_dict in ds.items():
+                            for qty_change_item, qty_change in qty_dict.items():
+                                key = str((price_change_item, qty_change_item))
+                                if key not in records:
+                                    records[key] = dict()
+                                    records[key]['price_change_item'] = price_change_item
+                                    records[key]['qty_change_item'] = qty_change_item
+                                records[key][change_type] = qty_change
+                    df = pd.read_json(json.dumps(list(records.values())), orient='records')
+                    file_name = f'{trainedmodel.name}_elasticity.csv'
+                    csv_file = ContentFile(df.to_csv(line_terminator='\n', index=False))
+                    trainedmodel.elasticity.save(file_name, csv_file)
+            except Exception as e:
+                print(e)
+                raise ParseError(e)
+        return HttpResponseRedirect(redirect_to=trainedmodel.elasticity.url, content_type="application/csv")
 
     @action(methods=['get'], detail=True)
     def cv_score(self, request, pk):

@@ -133,11 +133,14 @@ class CostSheetVerifier(UploadVerifier):
             item_id = row['Item']
             item_name = row['iName']
             item_cost = row['Cost']
-            price_current = row['Price']
             price_floor = row['Price_Floor']
             price_cap = row['Price_Cap']
-            if item_id in items: continue
-            items[item_id] = (item_name, item_cost, price_current, price_floor, price_cap)
+            if item_id in items: 
+                current_floor = items[item_id][2]
+                current_cap = items[item_id][3]
+                items[item_id] = (item_name, item_cost, min(price_floor, current_floor), max(price_cap, current_cap))
+            else:
+                items[item_id] = (item_name, item_cost, price_floor, price_cap)
         self.reset_seeker()
         return items
 
