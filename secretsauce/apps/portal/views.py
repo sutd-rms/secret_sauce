@@ -210,6 +210,9 @@ class ProjectItems(views.APIView):
             raise ParseError(detail='file is required', code='required')
 
         items = CostSheetVerifier(file_obj).get_items()
+        errors = [f'item_id: {item_id}, floor: {floor}, cap: {cap}' for item_id, (name, cost, floor, cap) in items.items() if floor > cap]
+        if len(errors) > 0:
+            raise ParseError({'floor/ceil mismatch': errors})
         self.perform_create(project, items)
         return Response(status=status.HTTP_201_CREATED)
 
@@ -383,10 +386,10 @@ class TrainModel(generics.ListCreateAPIView):
             payload = {'cv_acc': True, 'project_id': serializer.data['id'], 'modeltype': model_type}
             def r(url, data=None, files=None, timeout=None):
                 try:
-                    resp = requests.post(FILLET+'/train/', data=payload, files=files, timeout=(3.05, 10))
+                    resp = requests.post(url, data=data, files=files, timeout=timeout)
                 except requests.exceptions.ReadTimeout: 
                     pass
-                except requests.exceptions.ConnectionTimeout:
+                except requests.exceptions.ConnectTimeout:
                     pass
             Thread(target=r,
                 args=(FILLET + '/train/', ),
@@ -605,3 +608,131 @@ class ConstraintCategoryDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [AdminOrReadOnly]
     queryset = ConstraintCategory.objects.all()
     serializer_class = ConstraintCategorySerializer
+
+class OptimizerListCreate(generics.ListCreateAPIView):
+
+    queryset = Optimizer.objects.all()
+    serializer_class = OptimizerSerializer
+
+    @action(methods=['post'], detail=False, )
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                trainedmodel = TrainedPredictionModel.objects.all().get(id=request.data['trained_model'])
+                constraint_block = ConstraintBlock.objects.all().get(id=request.data['constraint_block'])
+                if trainedmodel.data_block.project != constraint_block.project:
+                    raise ParseError(detail='TrainedPredictionModel and ConstraintBlock have to belong to the same project!')
+            except TrainedPredictionModel.DoesNotExist as e:
+                raise ParseError(e)
+            except ConstraintBlock.DoesNotExist as e:
+                raise ParseError(e)
+
+            if trainedmodel.pct_complete != 100:
+                raise ParseError(detail='PredictionModel has not completed training yet.')
+
+            instance = serializer.save()
+            
+            cost_list = trainedmodel.data_block.project.get_cost_list()
+            if instance.cost:
+                if len(cost_list) == 0:
+                    instance.delete()
+                    raise ParseError(detail='Please upload cost sheet in order to optimize profit.')
+                data_block_items = [header.item_id for header in trainedmodel.data_block.schema.all()]
+                cost_items = set([entry['item_id'] for entry in cost_list])
+                errors = []
+                for item in data_block_items:
+                    if item not in cost_items:
+                        errors.append(item)
+                if len(errors) > 0:
+                    instance.delete()
+                    raise ParseError(detail={'missing_items': errors})
+
+            constraints = [
+                constraint_block.get_list(), 
+                constraint_block.project.get_price_bounds(), 
+                cost_list, 
+                not instance.cost,
+            ]
+            try:
+                payload = json.dumps({
+                    'project_id': str(trainedmodel.id),
+                    'optimisation_id': str(instance.id),
+                    'constraints': constraints,
+                    'population': serializer.data['population'],
+                    'max_epoch': serializer.data['max_epoch'],
+                })
+                headers = {
+                'content-type': 'application/json',
+                'Accept-Charset': 'UTF-8'
+                }
+                def r(url, data=None, headers=headers, timeout=None):
+                    try:
+                        resp = requests.post(url, data=data, headers=headers, timeout=timeout)
+                    except requests.exceptions.ReadTimeout: 
+                        pass
+                    except requests.exceptions.ConnectTimeout:
+                        pass
+                Thread(target=r,
+                    args=(FILLET + '/optimize/', ),
+                    kwargs={
+                        'data': payload,
+                        'headers': headers,
+                        'timeout': (3.05, 10),
+                    }).start()
+            except Exception as e:
+                raise ParseError(e)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_queryset(self):
+        project = self.request.query_params.get('project')
+        return self.queryset.filter(trained_model__data_block__project=project)
+
+class OptimizerDetail(generics.RetrieveDestroyAPIView):
+
+    queryset = Optimizer.objects.all()
+    serializer_class = OptimizerSerializer
+
+    def retrieve(self, request, pk):
+        instance = self.get_object()
+        if not instance.results:
+            try:
+                payload = json.dumps({
+                    'project_id': str(instance.trained_model.id),
+                    'optimisation_id': str(instance.id)
+                })
+                headers = {
+                    'content-type': 'application/json',
+                    'Accept-Charset': 'UTF-8'
+                }
+                r = requests.post(FILLET + '/get_opti_results/', data=payload, headers=headers, timeout=3.05)
+                if r.status_code == 200:
+                    if 'error' in r.json():
+                        raise ParseError(r.json()['error'])
+                    if 'status' in r.json():
+                        raise ParseError(r.json()['status'])
+                    
+                    instance.estimated_profit = r.json()['report'][0]
+                    instance.estimated_revenue = r.json()['report'][1]
+                    instance.hard_violations = r.json()['report'][2]
+                    instance.soft_violations = r.json()['report'][3]
+
+                    json_file = json.dumps({
+                        'item': {idx: val for idx, val in enumerate(r.json()['price_cols'])},
+                        'price': {idx: val for idx, val in enumerate(r.json()['result'])}
+                    })
+                    df = pd.read_json(json_file, orient='columns')
+
+                    if instance.cost:
+                        cost = 'with-cost'
+                    else:
+                        cost = 'without-cost'
+                    file_name = f'{instance.trained_model.name}_{instance.constraint_block.name}_{cost}_results.csv'
+                    csv_file = ContentFile(df.to_csv(line_terminator='\n', index=False))
+                    instance.results.save(file_name, csv_file)
+            except Exception as e:
+                print(e)
+                raise ParseError(e)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
