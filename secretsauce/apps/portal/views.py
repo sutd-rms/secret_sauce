@@ -19,7 +19,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from collections import defaultdict
 from threading import Thread
-import os, requests, json
+import os, requests, json, re
 
 FILLET = 'https://fillet.azurewebsites.net'
 
@@ -587,8 +587,9 @@ class TrainedModelInfo(viewsets.ViewSet):
                 'Accept-Charset': 'UTF-8'
             }
             r = requests.post(FILLET + '/predict/', data=payload, headers=headers, timeout=10.5)
-            df = pd.DataFrame.from_dict(r.json()['qty_estimates'], orient='index', columns=['qty'])
-            return FileResponse(df.to_csv(line_terminator='\n', index=False), content_type='application/csv', as_attachment=True, filename=f'{trainedmodel.name}_whatif.csv')
+            output = {re.sub("[^0-9]", "", k): [prices[re.sub("[^0-9]", "", k)], v]  for k, v in r.json()['qty_estimates'].items()}
+            df = pd.DataFrame.from_dict(output, orient='index', columns=['price', 'qty'])
+            return FileResponse(df.to_csv(line_terminator='\n'), content_type='application/csv', as_attachment=True, filename=f'{trainedmodel.name}_whatif.csv')
         except Exception as e:
             print(e)
             raise ParseError(e)
