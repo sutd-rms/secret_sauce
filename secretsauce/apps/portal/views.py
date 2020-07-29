@@ -712,10 +712,11 @@ class OptimizerDetail(generics.RetrieveDestroyAPIView):
                         raise ParseError(r.json()['error'])
                     if 'status' in r.json():
                         raise ParseError(r.json()['status'])
-
-                    instance.estimated_revenue = r.json()['report'][0]
-                    instance.hard_violations = r.json()['report'][1]
-                    instance.soft_violations = r.json()['report'][2]
+                    
+                    instance.estimated_profit = r.json()['report'][0]
+                    instance.estimated_revenue = r.json()['report'][1]
+                    instance.hard_violations = r.json()['report'][2]
+                    instance.soft_violations = r.json()['report'][3]
 
                     json_file = json.dumps({
                         'item': {idx: val for idx, val in enumerate(r.json()['price_cols'])},
