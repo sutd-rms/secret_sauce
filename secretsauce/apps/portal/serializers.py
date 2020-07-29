@@ -154,3 +154,9 @@ class ConstraintCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ConstraintCategory
         fields = '__all__'
+
+class OptimizerSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Optimizer
+        fields = '__all__'

@@ -42,4 +42,7 @@ urlpatterns = [
 
     path('trainedmodels/', views.TrainModel.as_view()), 
     path('trainedmodels/<uuid:pk>', views.TrainedModelDetail.as_view()),
+
+    path('optimizers/', views.OptimizerListCreate.as_view()),
+    path('optimizers/<uuid:pk>', views.OptimizerDetail.as_view()),
 ] + router.urls

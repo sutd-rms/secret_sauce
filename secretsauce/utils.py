@@ -132,9 +132,9 @@ class CostSheetVerifier(UploadVerifier):
         for row in self.csv_file:
             item_id = row['Item']
             item_name = row['iName']
-            item_cost = row['Cost']
-            price_floor = row['Price_Floor']
-            price_cap = row['Price_Cap']
+            item_cost = float(row['Cost'])
+            price_floor = float(row['Price_Floor'])
+            price_cap = float(row['Price_Cap'])
             if item_id in items: 
                 current_floor = items[item_id][2]
                 current_cap = items[item_id][3]

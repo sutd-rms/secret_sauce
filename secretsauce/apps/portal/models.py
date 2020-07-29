@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator
 
 from secretsauce.apps.account.models import User, Company
 from secretsauce.utils import obfuscate_upload_link, obfuscate_results_link
@@ -37,6 +38,17 @@ class Project(models.Model):
             entry['max'] = item.price_cap
             price_bounds.append(entry)
         return price_bounds
+
+    def get_cost_list(self):
+        cost_list = list()
+        if len(self.items.all()) == 0:
+            return cost_list
+        for item in self.items.all():
+            entry = dict()
+            entry['item_id'] = item.item_id
+            entry['cost'] = item.cost
+            cost_list.append(entry)
+        return cost_list
 
 class PredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -305,4 +317,25 @@ class TrainedPredictionModel(models.Model):
     elasticity = models.FileField(upload_to=obfuscate_results_link, blank=True)
 
     def __str__(self):
-        return f'TrainedPredictionModel: {name}'    
+        return f'TrainedPredictionModel: {name}'
+
+class Optimizer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created = models.DateTimeField(auto_now_add=True)
+    trained_model = models.ForeignKey(
+        TrainedPredictionModel,
+        on_delete=models.CASCADE,
+        related_name='opti_reports'
+    )
+    constraint_block = models.ForeignKey(
+        ConstraintBlock,
+        on_delete=models.CASCADE,
+    )
+    population = models.IntegerField(default=300, validators=[MinValueValidator(0)])
+    max_epoch = models.IntegerField(default=100, validators=[MinValueValidator(0)])
+    cost = models.BooleanField(default=False) # if True, use costs
+    results = models.FileField(upload_to=obfuscate_results_link, blank=True)
+    estimated_revenue = models.FloatField(null=True)
+    estimated_profit = models.FloatField(null=True)
+    hard_violations = models.IntegerField(null=True, validators=[MinValueValidator(0)])
+    soft_violations = models.IntegerField(null=True, validators=[MinValueValidator(0)])
