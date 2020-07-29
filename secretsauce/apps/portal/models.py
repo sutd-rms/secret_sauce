@@ -39,6 +39,17 @@ class Project(models.Model):
             price_bounds.append(entry)
         return price_bounds
 
+    def get_cost_list(self):
+        cost_list = list()
+        if len(self.items.all()) == 0:
+            return cost_list
+        for item in self.items.all():
+            entry = dict()
+            entry['item_id'] = item.item_id
+            entry['cost'] = item.cost
+            cost_list.append(entry)
+        return cost_list
+
 class PredictionModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200, unique=True)
@@ -322,7 +333,7 @@ class Optimizer(models.Model):
     )
     population = models.IntegerField(default=300, validators=[MinValueValidator(0)])
     max_epoch = models.IntegerField(default=100, validators=[MinValueValidator(0)])
-    cost = models.BooleanField(default=False)
+    cost = models.BooleanField(default=False) # if True, use costs
     results = models.FileField(upload_to=obfuscate_results_link, blank=True)
     estimated_revenue = models.FloatField(null=True)
     hard_violations = models.IntegerField(null=True, validators=[MinValueValidator(0)])

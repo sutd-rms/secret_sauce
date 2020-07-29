@@ -210,6 +210,9 @@ class ProjectItems(views.APIView):
             raise ParseError(detail='file is required', code='required')
 
         items = CostSheetVerifier(file_obj).get_items()
+        errors = [f'item_id: {item_id}, floor: {floor}, cap: {cap}' for item_id, (name, cost, floor, cap) in items.items() if floor > cap]
+        if len(errors) > 0:
+            raise ParseError({'floor/ceil mismatch': errors})
         self.perform_create(project, items)
         return Response(status=status.HTTP_201_CREATED)
 
@@ -614,13 +617,42 @@ class OptimizerListCreate(generics.ListCreateAPIView):
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            trainedmodel = get_object_or_404(TrainedPredictionModel.objects.all(), id=request.data['trained_model'])
+            try:
+                trainedmodel = TrainedPredictionModel.objects.all().get(id=request.data['trained_model'])
+                constraint_block = ConstraintBlock.objects.all().get(id=request.data['constraint_block'])
+                if trainedmodel.data_block.project != constraint_block.project:
+                    raise ParseError(detail='TrainedPredictionModel and ConstraintBlock have to belong to the same project!')
+            except TrainedPredictionModel.DoesNotExist as e:
+                raise ParseError(e)
+            except ConstraintBlock.DoesNotExist as e:
+                raise ParseError(e)
+
             if trainedmodel.pct_complete != 100:
                 raise ParseError(detail='PredictionModel has not completed training yet.')
 
             instance = serializer.save()
-            constraint_block = ConstraintBlock.objects.all().get(id=serializer.data['constraint_block'])
-            constraints = [constraint_block.get_list(), constraint_block.project.get_price_bounds()]
+            
+            cost_list = trainedmodel.data_block.project.get_cost_list()
+            if instance.cost:
+                if len(cost_list) == 0:
+                    instance.delete()
+                    raise ParseError(detail='Please upload cost sheet in order to optimize profit.')
+                data_block_items = [header.item_id for header in trainedmodel.data_block.schema.all()]
+                cost_items = set([entry['item_id'] for entry in cost_list])
+                errors = []
+                for item in data_block_items:
+                    if item not in cost_items:
+                        errors.append(item)
+                if len(errors) > 0:
+                    instance.delete()
+                    raise ParseError(detail={'missing_items': errors})
+
+            constraints = [
+                constraint_block.get_list(), 
+                constraint_block.project.get_price_bounds(), 
+                cost_list, 
+                not instance.cost,
+            ]
             try:
                 payload = json.dumps({
                     'project_id': str(trainedmodel.id),
@@ -653,8 +685,8 @@ class OptimizerListCreate(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_queryset(self):
-        trained_model = self.request.query_params.get('trained_model')
-        return self.queryset.filter(trained_model=trained_model)
+        project = self.request.query_params.get('project')
+        return self.queryset.filter(trained_model__data_block__project=project)
 
 class OptimizerDetail(generics.RetrieveDestroyAPIView):
 
@@ -675,8 +707,10 @@ class OptimizerDetail(generics.RetrieveDestroyAPIView):
                 }
                 r = requests.post(FILLET + '/get_opti_results/', data=payload, headers=headers, timeout=3.05)
                 if r.status_code == 200:
-                    if 'error' in r.json() or 'status' in r.json():
-                        raise ParseError(r.json())
+                    if 'error' in r.json():
+                        raise ParseError(r.json()['error'])
+                    if 'status' in r.json():
+                        raise ParseError(r.json()['status'])
 
                     instance.estimated_revenue = r.json()['report'][0]
                     instance.hard_violations = r.json()['report'][1]
