@@ -149,13 +149,27 @@ class TraindePredictionModelDisplaySerializer(serializers.ModelSerializer):
         model = TrainedPredictionModel
         exclude = []
 
+class TrainedPredictionModelNameSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = TrainedPredictionModel
+        fields = ['id', 'name']
+
 class ConstraintCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ConstraintCategory
         fields = '__all__'
 
-class OptimizerSerializer(serializers.ModelSerializer):
+class OptimizerDisplaySerializer(serializers.ModelSerializer):
+    constraint_block = ConstraintBlockListDisplaySerializer()
+    trained_model = TrainedPredictionModelNameSerializer()
+    
+    class Meta:
+        model = Optimizer
+        fields = '__all__'
+
+class OptimizerCreateSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Optimizer

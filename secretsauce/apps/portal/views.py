@@ -612,7 +612,6 @@ class ConstraintCategoryDetail(generics.RetrieveUpdateDestroyAPIView):
 class OptimizerListCreate(generics.ListCreateAPIView):
 
     queryset = Optimizer.objects.all()
-    serializer_class = OptimizerSerializer
 
     @action(methods=['post'], detail=False, )
     def create(self, request):
@@ -689,10 +688,15 @@ class OptimizerListCreate(generics.ListCreateAPIView):
         project = self.request.query_params.get('project')
         return self.queryset.filter(trained_model__data_block__project=project)
 
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return OptimizerDisplaySerializer
+        return OptimizerCreateSerializer
+
 class OptimizerDetail(generics.RetrieveDestroyAPIView):
 
     queryset = Optimizer.objects.all()
-    serializer_class = OptimizerSerializer
+    serializer_class = OptimizerDisplaySerializer
 
     def retrieve(self, request, pk):
         instance = self.get_object()
