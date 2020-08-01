@@ -335,7 +335,3 @@ class Optimizer(models.Model):
     max_epoch = models.IntegerField(default=100, validators=[MinValueValidator(0)])
     cost = models.BooleanField(default=False) # if True, use costs
     results = models.FileField(upload_to=obfuscate_results_link, blank=True)
-    estimated_revenue = models.FloatField(null=True)
-    estimated_profit = models.FloatField(null=True)
-    hard_violations = models.IntegerField(null=True, validators=[MinValueValidator(0)])
-    soft_violations = models.IntegerField(null=True, validators=[MinValueValidator(0)])

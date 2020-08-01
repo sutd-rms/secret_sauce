@@ -633,6 +633,8 @@ class OptimizerListCreate(generics.ListCreateAPIView):
             instance = serializer.save()
             
             cost_list = trainedmodel.data_block.project.get_cost_list()
+
+            # If want to optimize using cost, cost sheet has to be uploaded
             if instance.cost:
                 if len(cost_list) == 0:
                     instance.delete()
@@ -643,6 +645,8 @@ class OptimizerListCreate(generics.ListCreateAPIView):
                 for item in data_block_items:
                     if item not in cost_items:
                         errors.append(item)
+
+                # Check if there are items in DataBlock but not in cost sheet
                 if len(errors) > 0:
                     instance.delete()
                     raise ParseError(detail={'missing_items': errors})
@@ -712,28 +716,35 @@ class OptimizerDetail(generics.RetrieveDestroyAPIView):
                 }
                 r = requests.post(FILLET + '/get_opti_results/', data=payload, headers=headers, timeout=3.05)
                 if r.status_code == 200:
-                    if 'error' in r.json():
-                        raise ParseError(r.json()['error'])
-                    if 'status' in r.json():
-                        raise ParseError(r.json()['status'])
+                    r_json = r.json()
+                    if 'error' in r_json:
+                        raise ParseError(r_json['error'])
+                    if 'status' in r_json:
+                        raise ParseError(r_json['status'])
+
+                    if r_json['success'] == False and r_json['type'] == 2:
+                        raise ParseError(r_json['info'])
                     
-                    instance.estimated_profit = r.json()['report'][0]
-                    instance.estimated_revenue = r.json()['report'][1]
-                    instance.hard_violations = r.json()['report'][2]
-                    instance.soft_violations = r.json()['report'][3]
+                    instance.estimated_profit = r_json['report'][0]
+                    instance.estimated_revenue = r_json['report'][1]
+                    instance.hard_violations = r_json['report'][2]
+                    instance.soft_violations = r_json['report'][3]
 
                     json_file = json.dumps({
-                        'item': {idx: val for idx, val in enumerate(r.json()['price_cols'])},
-                        'price': {idx: val for idx, val in enumerate(r.json()['result'])}
+                        'item': {idx: val for idx, val in enumerate(r_json['price_cols'])},
+                        'price': {idx: val for idx, val in enumerate(r_json['result'])}
                     })
                     df = pd.read_json(json_file, orient='columns')
+                    csv_file = df.to_csv(line_terminator='\n', index=False)
+                    for i in range(4):
+                        csv_file += f"{r_json['report_info'][i]},{r_json['report'][i]}\n"
 
                     if instance.cost:
                         cost = 'with-cost'
                     else:
                         cost = 'without-cost'
                     file_name = f'{instance.trained_model.name}_{instance.constraint_block.name}_{cost}_results.csv'
-                    csv_file = ContentFile(df.to_csv(line_terminator='\n', index=False))
+                    csv_file = ContentFile(csv_file)
                     instance.results.save(file_name, csv_file)
             except Exception as e:
                 print(e)
