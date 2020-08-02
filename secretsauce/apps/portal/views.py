@@ -34,6 +34,7 @@ class DataBlockList(generics.ListCreateAPIView):
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockListSerializer
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -63,6 +64,7 @@ class DataBlockList(generics.ListCreateAPIView):
             # Ensure queryset is re-evaluated on each request.
             queryset = queryset.all()
         project = self.request.query_params.get('project')
+        self.check_object_permissions(self.request, project)
         return queryset.filter(project=project)
         
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
@@ -249,6 +251,7 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
     """
 
     queryset = ConstraintBlock.objects.all()
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -271,6 +274,7 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         project = self.request.query_params.get('project')
+        self.check_object_permissions(self.request, project)
         return self.queryset.filter(project=project)
 
     def get_serializer_class(self):
@@ -294,12 +298,14 @@ class ConstraintBlockItems(generics.ListAPIView):
 
     def get_queryset(self):
         cb = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, cb)
         return self.queryset.filter(constraint_block=cb)
 
 class ConstraintListAndCreate(generics.ListCreateAPIView):
     
     queryset = Constraint.objects.all()
     parser_classes =  [JSONParser]
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -336,6 +342,7 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         cb = self.request.query_params.get('constraint_block')
+        self.check_object_permissions(self.request, cb)
         return self.queryset.filter(constraint_block=cb)
 
     def get_serializer_class(self):
@@ -377,6 +384,7 @@ class TrainModel(generics.ListCreateAPIView):
 
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TrainedPredictionModelSerializer
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -411,6 +419,7 @@ class TrainModel(generics.ListCreateAPIView):
     def get_queryset(self):
         try:
             project = Project.objects.get(id=self.request.query_params['project'])
+            self.check_object_permissions(self.request, project)
         except KeyError:
             raise ParseError(detail="Please specify project")
         except Project.DoesNotExist:
@@ -628,6 +637,7 @@ class ConstraintCategoryDetail(generics.RetrieveUpdateDestroyAPIView):
 class OptimizerListCreate(generics.ListCreateAPIView):
 
     queryset = Optimizer.objects.all()
+    permission_classes = [IsOwnerOrAdmin]
 
     @action(methods=['post'], detail=False, )
     def create(self, request):
@@ -706,6 +716,7 @@ class OptimizerListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         project = self.request.query_params.get('project')
+        self.check_object_permissions(self.request, project)
         return self.queryset.filter(trained_model__data_block__project=project)
 
     def get_serializer_class(self):
