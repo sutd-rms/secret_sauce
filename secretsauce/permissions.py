@@ -1,6 +1,7 @@
 from rest_framework import permissions
 from secretsauce.apps.account.models import User
 from secretsauce.apps.portal.models import *
+from secretsauce.apps.portal.views import *
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
@@ -23,7 +24,13 @@ class IsOwnerOrAdmin(permissions.BasePermission):
 
         if isinstance(obj, ConstraintParameterRelationship):
             return obje.constraint.constraint_block.project.owners.all().filter(pk=request.user.id).exists()
-        
+
+        if isinstance(obj, TrainedPredictionModel):
+            return obj.data_block.project.owners.all().filter(pk=request.user.id).exists()
+
+        if isinstance(obj, Optimizer):
+            return obj.constraint_block.project.owners.all().filter(pk=request.user.id).exists()
+
         return False
         
     

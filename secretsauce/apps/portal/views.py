@@ -76,9 +76,10 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
 
 class DataBlockPrice(viewsets.ViewSet):
 
-    @action(methods=['get'], detail=True)
+    @action(methods=['get'], detail=True, permission_classes=[IsOwnerOrAdmin])
     def average_prices(self, request, pk):
         data_block = get_object_or_404(DataBlock.objects.all(), id=pk)
+        self.check_object_permissions(request, data_block)
         df = pd.read_csv(data_block.upload).drop(['Wk', 'Tier', 'Groups', 'Store', 'Qty_'], axis=1)
         df = df.groupby(['Item_ID']).mean()
         output = df.to_dict()['Price_']
@@ -86,13 +87,15 @@ class DataBlockPrice(viewsets.ViewSet):
 
 class VizDataBlock(viewsets.ViewSet):
 
+    permission_classes=[IsOwnerOrAdmin]
     parser_classes = [MultiPartParser]
     max_query_size = 10
 
-    @action(methods=['get'], detail=True, url_path='vizdata/price', url_name='viz-price')
+    @action(methods=['get'], detail=True, url_path='vizdata/price', url_name='viz-price', )
     def price(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
-    
+        self.check_object_permissions(request, data_block)
+
         if 'items' not in request.query_params:
             raise ParseError(detail="'items' required in query_params", code='invalid_data')
 
@@ -112,7 +115,8 @@ class VizDataBlock(viewsets.ViewSet):
     @action(methods=['get'], detail=True, url_path='vizdata/qty', url_name='viz-qty')
     def qty(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
-     
+        self.check_object_permissions(request, data_block)
+
         if 'items' not in request.query_params:
             raise ParseError(detail="'items' required in query_params", code='invalid_data')
 
@@ -278,6 +282,7 @@ class ConstraintBlockDetail(generics.RetrieveDestroyAPIView):
 
     queryset = ConstraintBlock.objects.all()
     serializer_class = ConstraintBlockDetailSerializer
+    permission_classes = [IsOwnerOrAdmin]
 
 class ConstraintBlockItems(generics.ListAPIView):
     """
@@ -342,6 +347,7 @@ class ConstraintDetail(generics.RetrieveDestroyAPIView):
 
     queryset = Constraint.objects.all()
     serializer_class = ConstraintDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
 
 class PredictionModelList(generics.ListCreateAPIView):
 
@@ -452,15 +458,19 @@ class TrainedModelDetail(generics.RetrieveDestroyAPIView):
     
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TraindePredictionModelDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
 
 class TrainedModelInfo(viewsets.ViewSet):
     
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TraindePredictionModelDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
     
     @action(methods=['get'], detail=True)
     def feature_importance(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         if trainedmodel.fi_done == False:
@@ -498,6 +508,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True)
     def elasticity(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         if trainedmodel.ee_done == False:
@@ -537,6 +549,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True)
     def cv_score(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         if trainedmodel.cv_progress != 100:
@@ -565,6 +579,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['post'], detail=True, parser_classes=[JSONParser])
     def whatif(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         try:
@@ -701,6 +717,7 @@ class OptimizerDetail(generics.RetrieveDestroyAPIView):
 
     queryset = Optimizer.objects.all()
     serializer_class = OptimizerDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
 
     def retrieve(self, request, pk):
         instance = self.get_object()
