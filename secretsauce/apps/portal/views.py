@@ -64,8 +64,10 @@ class DataBlockList(generics.ListCreateAPIView):
             # Ensure queryset is re-evaluated on each request.
             queryset = queryset.all()
         project = self.request.query_params.get('project')
-        self.check_object_permissions(self.request, project)
-        return queryset.filter(project=project)
+        projects = queryset.filter(project=project)
+        for p in projects:
+            self.check_object_permissions(self.request, p)
+        return projects
         
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
     """
@@ -274,8 +276,10 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         project = self.request.query_params.get('project')
-        self.check_object_permissions(self.request, project)
-        return self.queryset.filter(project=project)
+        projects = self.queryset.filter(project=project)
+        for p in projects:
+            self.check_object_permissions(self.request, p)
+        return projects
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -297,9 +301,11 @@ class ConstraintBlockItems(generics.ListAPIView):
     serializer_class = ConstraintParameterSerializer
 
     def get_queryset(self):
-        cb = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, cb)
-        return self.queryset.filter(constraint_block=cb)
+        constraint_block = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
+        constraint_blocks = self.queryset.filter(constraint_block=constraint_block)
+        for cb in constraint_blocks:
+            self.check_object_permissions(self.request, cb)
+        return constraint_blocks
 
 class ConstraintListAndCreate(generics.ListCreateAPIView):
     
@@ -341,9 +347,11 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_queryset(self):
-        cb = self.request.query_params.get('constraint_block')
-        self.check_object_permissions(self.request, cb)
-        return self.queryset.filter(constraint_block=cb)
+        constraint_block = self.request.query_params.get('constraint_block')
+        constraint_blocks = self.queryset.filter(constraint_block=cb)
+        for cb in constraint_blocks:
+            self.check_object_permissions(self.request, cb)
+        return cb
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -716,8 +724,10 @@ class OptimizerListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         project = self.request.query_params.get('project')
-        self.check_object_permissions(self.request, project)
-        return self.queryset.filter(trained_model__data_block__project=project)
+        projects = self.queryset.filter(trained_model__data_block__project=project)
+        for p in projects:
+            self.check_object_permissions(self.request, p)
+        return projects
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
