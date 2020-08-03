@@ -48,7 +48,6 @@ class InviteUser(generics.CreateAPIView):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        print(serializer.errors['email'])
         if ErrorDetail(string='user with this email address already exists.', code='unique') in serializer.errors['email']:
             mappings = {
             'email': serializer.data.get('email'),
