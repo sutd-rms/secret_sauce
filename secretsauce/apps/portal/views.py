@@ -34,6 +34,7 @@ class DataBlockList(generics.ListCreateAPIView):
     queryset = DataBlock.objects.all()
     serializer_class = DataBlockListSerializer
     parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -63,6 +64,7 @@ class DataBlockList(generics.ListCreateAPIView):
             # Ensure queryset is re-evaluated on each request.
             queryset = queryset.all()
         project = self.request.query_params.get('project')
+        self.check_object_permissions(self.request, project)
         return queryset.filter(project=project)
         
 class DataBlockDetail(generics.RetrieveDestroyAPIView):
@@ -76,9 +78,10 @@ class DataBlockDetail(generics.RetrieveDestroyAPIView):
 
 class DataBlockPrice(viewsets.ViewSet):
 
-    @action(methods=['get'], detail=True)
+    @action(methods=['get'], detail=True, permission_classes=[IsOwnerOrAdmin])
     def average_prices(self, request, pk):
         data_block = get_object_or_404(DataBlock.objects.all(), id=pk)
+        self.check_object_permissions(request, data_block)
         df = pd.read_csv(data_block.upload).drop(['Wk', 'Tier', 'Groups', 'Store', 'Qty_'], axis=1)
         df = df.groupby(['Item_ID']).mean()
         output = df.to_dict()['Price_']
@@ -86,13 +89,15 @@ class DataBlockPrice(viewsets.ViewSet):
 
 class VizDataBlock(viewsets.ViewSet):
 
+    permission_classes=[IsOwnerOrAdmin]
     parser_classes = [MultiPartParser]
     max_query_size = 10
 
-    @action(methods=['get'], detail=True, url_path='vizdata/price', url_name='viz-price')
+    @action(methods=['get'], detail=True, url_path='vizdata/price', url_name='viz-price', )
     def price(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
-    
+        self.check_object_permissions(request, data_block)
+
         if 'items' not in request.query_params:
             raise ParseError(detail="'items' required in query_params", code='invalid_data')
 
@@ -112,7 +117,8 @@ class VizDataBlock(viewsets.ViewSet):
     @action(methods=['get'], detail=True, url_path='vizdata/qty', url_name='viz-qty')
     def qty(self, request, pk, *args, **kwargs):
         data_block = self.get_object(pk)
-     
+        self.check_object_permissions(request, data_block)
+
         if 'items' not in request.query_params:
             raise ParseError(detail="'items' required in query_params", code='invalid_data')
 
@@ -245,6 +251,7 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
     """
 
     queryset = ConstraintBlock.objects.all()
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -267,6 +274,7 @@ class ConstraintBlockListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         project = self.request.query_params.get('project')
+        self.check_object_permissions(self.request, project)
         return self.queryset.filter(project=project)
 
     def get_serializer_class(self):
@@ -278,6 +286,7 @@ class ConstraintBlockDetail(generics.RetrieveDestroyAPIView):
 
     queryset = ConstraintBlock.objects.all()
     serializer_class = ConstraintBlockDetailSerializer
+    permission_classes = [IsOwnerOrAdmin]
 
 class ConstraintBlockItems(generics.ListAPIView):
     """
@@ -289,12 +298,14 @@ class ConstraintBlockItems(generics.ListAPIView):
 
     def get_queryset(self):
         cb = ConstraintBlock.objects.get(id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, cb)
         return self.queryset.filter(constraint_block=cb)
 
 class ConstraintListAndCreate(generics.ListCreateAPIView):
     
     queryset = Constraint.objects.all()
     parser_classes =  [JSONParser]
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -331,6 +342,7 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         cb = self.request.query_params.get('constraint_block')
+        self.check_object_permissions(self.request, cb)
         return self.queryset.filter(constraint_block=cb)
 
     def get_serializer_class(self):
@@ -342,6 +354,7 @@ class ConstraintDetail(generics.RetrieveDestroyAPIView):
 
     queryset = Constraint.objects.all()
     serializer_class = ConstraintDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
 
 class PredictionModelList(generics.ListCreateAPIView):
 
@@ -371,6 +384,7 @@ class TrainModel(generics.ListCreateAPIView):
 
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TrainedPredictionModelSerializer
+    permission_classes = [IsOwnerOrAdmin]
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -405,6 +419,7 @@ class TrainModel(generics.ListCreateAPIView):
     def get_queryset(self):
         try:
             project = Project.objects.get(id=self.request.query_params['project'])
+            self.check_object_permissions(self.request, project)
         except KeyError:
             raise ParseError(detail="Please specify project")
         except Project.DoesNotExist:
@@ -452,15 +467,19 @@ class TrainedModelDetail(generics.RetrieveDestroyAPIView):
     
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TraindePredictionModelDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
 
 class TrainedModelInfo(viewsets.ViewSet):
     
     queryset = TrainedPredictionModel.objects.all()
     serializer_class = TraindePredictionModelDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
     
     @action(methods=['get'], detail=True)
     def feature_importance(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         if trainedmodel.fi_done == False:
@@ -498,6 +517,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True)
     def elasticity(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         if trainedmodel.ee_done == False:
@@ -537,6 +558,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['get'], detail=True)
     def cv_score(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         if trainedmodel.cv_progress != 100:
@@ -565,6 +588,8 @@ class TrainedModelInfo(viewsets.ViewSet):
     @action(methods=['post'], detail=True, parser_classes=[JSONParser])
     def whatif(self, request, pk):
         trainedmodel = get_object_or_404(self.queryset, id=pk)
+        self.check_object_permissions(request, trainedmodel)
+
         if trainedmodel.pct_complete != 100:
             raise ParseError(detail='Model has not finished training yet.')
         try:
@@ -612,6 +637,7 @@ class ConstraintCategoryDetail(generics.RetrieveUpdateDestroyAPIView):
 class OptimizerListCreate(generics.ListCreateAPIView):
 
     queryset = Optimizer.objects.all()
+    permission_classes = [IsOwnerOrAdmin]
 
     @action(methods=['post'], detail=False, )
     def create(self, request):
@@ -690,6 +716,7 @@ class OptimizerListCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         project = self.request.query_params.get('project')
+        self.check_object_permissions(self.request, project)
         return self.queryset.filter(trained_model__data_block__project=project)
 
     def get_serializer_class(self):
@@ -701,6 +728,7 @@ class OptimizerDetail(generics.RetrieveDestroyAPIView):
 
     queryset = Optimizer.objects.all()
     serializer_class = OptimizerDisplaySerializer
+    permission_classes = [IsOwnerOrAdmin]
 
     def retrieve(self, request, pk):
         instance = self.get_object()
