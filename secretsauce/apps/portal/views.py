@@ -351,7 +351,7 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
         constraint_blocks = self.queryset.filter(constraint_block=constraint_block)
         for cb in constraint_blocks:
             self.check_object_permissions(self.request, cb)
-        return cb
+        return constraint_blocks
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
