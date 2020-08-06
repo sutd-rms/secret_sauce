@@ -348,7 +348,7 @@ class ConstraintListAndCreate(generics.ListCreateAPIView):
 
     def get_queryset(self):
         constraint_block = self.request.query_params.get('constraint_block')
-        constraint_blocks = self.queryset.filter(constraint_block=cb)
+        constraint_blocks = self.queryset.filter(constraint_block=constraint_block)
         for cb in constraint_blocks:
             self.check_object_permissions(self.request, cb)
         return cb
